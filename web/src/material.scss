@@ -1,0 +1,91 @@
+@use '@angular/material' as mat;
+
+// Tema de Angular Material alineado con los tokens de tailwind.css (esquinas de 8px, Geist).
+// Al cambiar de paleta, reemplaza los hex de primary / on-primary / primary-container /
+// on-primary-container con los mismos valores claro/oscuro que en tailwind.css.
+// `theme-type: color-scheme` hace que los tokens usen light-dark(): el modo oscuro
+// se activa solo con `color-scheme: dark` en <html> (clase `.dark`, ver TemaService).
+html {
+  color-scheme: light;
+
+  @include mat.theme(
+    (
+      color: (
+        primary: mat.$azure-palette,
+        theme-type: color-scheme,
+      ),
+      typography: (
+        plain-family: Geist,
+        brand-family: Geist,
+      ),
+      density: 0,
+    )
+  );
+
+  @include mat.theme-overrides(
+    (
+      primary: light-dark(#1d4ed8, #60a5fa),
+      on-primary: light-dark(#ffffff, #0b0f17),
+      primary-container: light-dark(#eff6ff, #172554),
+      on-primary-container: light-dark(#1e40af, #bfdbfe),
+      surface: light-dark(#ffffff, #121926),
+      on-surface: light-dark(#101828, #e6eaf2),
+      on-surface-variant: light-dark(#475467, #a3aec2),
+      surface-container-lowest: light-dark(#ffffff, #0e1420),
+      surface-container-low: light-dark(#f9fafb, #121926),
+      surface-container: light-dark(#ffffff, #121926),
+      surface-container-high: light-dark(#ffffff, #172031),
+      surface-container-highest: light-dark(#f2f4f7, #1b2433),
+      outline: light-dark(#d0d5dd, #344054),
+      outline-variant: light-dark(#e4e7ec, #223044),
+      error: light-dark(#dc2626, #f87171),
+    )
+  );
+
+  @include mat.button-overrides(
+    (
+      filled-container-shape: 8px,
+      outlined-container-shape: 8px,
+      text-container-shape: 8px,
+      protected-container-shape: 8px,
+      tonal-container-shape: 8px,
+    )
+  );
+  @include mat.form-field-overrides((outlined-container-shape: 8px));
+  @include mat.dialog-overrides((container-shape: 16px));
+}
+
+html.dark {
+  color-scheme: dark;
+}
+
+// Formularios compactos (barras de filtros, selects en tablas)
+.campo-denso {
+  @include mat.theme((density: -4));
+}
+
+// Tailwind (preflight) + contorno de mat-form-field: evita una línea sobre la etiqueta flotante
+.mdc-notched-outline__notch {
+  border-right-style: hidden;
+}
+
+// Tamaños de ícono (Material Symbols)
+.mat-icon.icono-sm {
+  width: 18px;
+  height: 18px;
+  font-size: 18px;
+}
+
+.mat-icon.icono-xs {
+  width: 16px;
+  height: 16px;
+  font-size: 16px;
+}
+
+// Botón de peligro (cancelar, desactivar, eliminar)
+.boton-peligro.mat-mdc-button-base {
+  --mat-button-outlined-label-text-color: var(--app-critico);
+  --mat-button-outlined-outline-color: var(--app-critico);
+  --mat-button-filled-container-color: var(--app-critico);
+  --mat-button-filled-label-text-color: #ffffff;
+}

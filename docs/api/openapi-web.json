@@ -1,0 +1,3928 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "La Victoria Protege · API",
+    "description": "Sistema de seguridad ciudadana del distrito de La Victoria (Chiclayo).\n\n**Autenticación:** `POST /api/auth/login` devuelve un token JWT. Envíalo en cada petición como\n`Authorization: Bearer <token>`. Dura 12 horas.\n\n**Tiempo real:** además de esta API REST hay un WebSocket (STOMP) en `/ws`; no forma parte de\nOpenAPI y está descrito en la guía `docs/api/GUIA-MOVILES.md`.\n\n**Errores:** todos los errores tienen la forma `{ codigo, mensaje, campos }`. Muestra `mensaje`\nal usuario y decide la lógica con `codigo`.\n",
+    "version": "1.0"
+  },
+  "servers": [
+    {
+      "url": "http://localhost:8080",
+      "description": "Desarrollo local"
+    }
+  ],
+  "security": [
+    {
+      "jwt": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Administración · parámetros",
+      "description": "Solo ADMIN."
+    },
+    {
+      "name": "Administración · zonas",
+      "description": "Sectores del distrito. Solo ADMIN."
+    },
+    {
+      "name": "Administración · auditoría",
+      "description": "Quién hizo qué y cuándo. Solo lectura. Rol requerido: `ADMIN`."
+    },
+    {
+      "name": "Central · reportes",
+      "description": "Estadísticas de un rango de fechas (hora de Lima)."
+    },
+    {
+      "name": "Central · resumen y zonas",
+      "description": "Indicadores del día y polígonos del mapa."
+    },
+    {
+      "name": "Central · intervención",
+      "description": "Asignación manual y cancelación por la central."
+    },
+    {
+      "name": "Central · alertas",
+      "description": "Consulta de alertas para la plataforma web. Roles: OPERADOR, SUPERVISOR, ADMIN."
+    },
+    {
+      "name": "Administración · unidades",
+      "description": "Solo ADMIN."
+    },
+    {
+      "name": "Administración · usuarios",
+      "description": "Solo ADMIN."
+    },
+    {
+      "name": "Central · unidades",
+      "description": "Unidades activas en tiempo real."
+    },
+    {
+      "name": "Autenticación",
+      "description": "Inicio de sesión y registro. Compartido por las apps y la web."
+    },
+    {
+      "name": "Evidencias",
+      "description": "Fotos, videos y notas que el ciudadano y el sereno adjuntan a una alerta; la central las ve en el detalle.\nSe suben como `multipart/form-data` con `archivo` (opcional) y `observacion` (opcional, hasta 500 caracteres);\nhay que enviar al menos uno. Fotos JPG, PNG o WebP (hasta 8 MB) y video MP4 (hasta 40 MB); el tipo se\nreconoce por el contenido del archivo, no por su extensión. Máximo 10 evidencias por alerta y por origen.\nPara mostrar una foto o video hay que pedir `GET /api/evidencias/{id}/archivo` **con el token** (una etiqueta\nde imagen sin cabecera no sirve: descarga el archivo y muéstralo desde la memoria)."
+    }
+  ],
+  "paths": {
+    "/api/admin/zonas/{id}": {
+      "put": {
+        "tags": [
+          "Administración · zonas"
+        ],
+        "summary": "Renombrar un sector",
+        "operationId": "renombrar",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RenombrarZona"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ZonaAdminResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Datos inválidos. `campos` indica cuáles.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sin sesión o token vencido: vuelve a iniciar sesión.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Tu rol no tiene permiso para esta operación.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No existe (`NO_ENCONTRADO`).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicto con el estado actual (revisa `codigo`).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "No cumple una regla de negocio (revisa `codigo` y `mensaje`).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/zonas/distrito": {
+      "put": {
+        "tags": [
+          "Administración · zonas"
+        ],
+        "summary": "Redefinir el límite del distrito (polígono GeoJSON)",
+        "operationId": "redefinirDistrito",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RedefinirDistrito"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ZonaAdminResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Datos inválidos. `campos` indica cuáles.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sin sesión o token vencido: vuelve a iniciar sesión.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Tu rol no tiene permiso para esta operación.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicto con el estado actual (revisa `codigo`).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "No cumple una regla de negocio (revisa `codigo` y `mensaje`).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/usuarios/{id}": {
+      "put": {
+        "tags": [
+          "Administración · usuarios"
+        ],
+        "summary": "Actualizar los datos y el rol de un usuario",
+        "operationId": "actualizar",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ActualizarUsuario"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/UsuarioAdminResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Datos inválidos. `campos` indica cuáles.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sin sesión o token vencido: vuelve a iniciar sesión.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Tu rol no tiene permiso para esta operación.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No existe (`NO_ENCONTRADO`).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicto con el estado actual (revisa `codigo`).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "No cumple una regla de negocio (revisa `codigo` y `mensaje`).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/unidades/{id}": {
+      "put": {
+        "tags": [
+          "Administración · unidades"
+        ],
+        "summary": "Actualizar una unidad y su sereno",
+        "operationId": "actualizar_1",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ActualizarUnidad"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnidadAdminResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Datos inválidos. `campos` indica cuáles.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sin sesión o token vencido: vuelve a iniciar sesión.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Tu rol no tiene permiso para esta operación.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No existe (`NO_ENCONTRADO`).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicto con el estado actual (revisa `codigo`).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "No cumple una regla de negocio (revisa `codigo` y `mensaje`).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/parametros/{clave}": {
+      "put": {
+        "tags": [
+          "Administración · parámetros"
+        ],
+        "summary": "Cambiar un parámetro del motor",
+        "operationId": "cambiar",
+        "parameters": [
+          {
+            "name": "clave",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CambioParametro"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ParametroResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Datos inválidos. `campos` indica cuáles.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sin sesión o token vencido: vuelve a iniciar sesión.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Tu rol no tiene permiso para esta operación.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No existe (`NO_ENCONTRADO`).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicto con el estado actual (revisa `codigo`).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "No cumple una regla de negocio (revisa `codigo` y `mensaje`).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/monitoreo/alertas/{id}/cancelar": {
+      "post": {
+        "tags": [
+          "Central · intervención"
+        ],
+        "summary": "Cancelar una alerta desde la central",
+        "operationId": "cancelar",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Cancelacion"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AlertaDetalleResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Datos inválidos. `campos` indica cuáles.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sin sesión o token vencido: vuelve a iniciar sesión.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Tu rol no tiene permiso para esta operación.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No existe (`NO_ENCONTRADO`).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicto con el estado actual (revisa `codigo`).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "No cumple una regla de negocio (revisa `codigo` y `mensaje`).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/monitoreo/alertas/{id}/asignar": {
+      "post": {
+        "tags": [
+          "Central · intervención"
+        ],
+        "summary": "Asignar una unidad a mano",
+        "operationId": "asignar",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AsignacionManual"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AlertaDetalleResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Datos inválidos. `campos` indica cuáles.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sin sesión o token vencido: vuelve a iniciar sesión.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Tu rol no tiene permiso para esta operación.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No existe (`NO_ENCONTRADO`).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicto con el estado actual (revisa `codigo`).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "No cumple una regla de negocio (revisa `codigo` y `mensaje`).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/registro": {
+      "post": {
+        "tags": [
+          "Autenticación"
+        ],
+        "summary": "Registrar un ciudadano",
+        "description": "Crea una cuenta de **ciudadano** (siempre este rol) y devuelve la sesión iniciada. El personal\n(serenos, operadores…) lo crea un administrador desde la web.\n\nErrores: `409 CONFLICTO` (el DNI o el correo ya tienen cuenta), `400 VALIDACION` (campos).\nNota: por ahora no se valida la identidad contra RENIEC.",
+        "operationId": "registro",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegistroRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/TokenResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Datos inválidos. `campos` indica cuáles.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Ya existe una cuenta con ese DNI o correo (`CONFLICTO`).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          }
+        },
+        "security": []
+      }
+    },
+    "/api/auth/login": {
+      "post": {
+        "tags": [
+          "Autenticación"
+        ],
+        "summary": "Iniciar sesión",
+        "description": "Entra con el DNI (8 dígitos) o el correo y la contraseña. Devuelve el token JWT y el usuario.\nEl token lleva el rol (`CIUDADANO`, `SERENO`, `OPERADOR`, `SUPERVISOR`, `ADMIN`); la app del\nciudadano solo debe aceptar `CIUDADANO` y la del sereno solo `SERENO`.\n\nErrores: `401 NO_AUTORIZADO` (credenciales inválidas o usuario inactivo; el mensaje no dice cuál),\n`429 DEMASIADOS_INTENTOS` (5 intentos fallidos seguidos bloquean el acceso 15 minutos; `mensaje`\ndice cuánto falta).",
+        "operationId": "login",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/TokenResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Datos inválidos. `campos` indica cuáles.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Credenciales inválidas o usuario inactivo (`NO_AUTORIZADO`).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Demasiados intentos fallidos: la cuenta queda bloqueada unos minutos (`DEMASIADOS_INTENTOS`).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          }
+        },
+        "security": []
+      }
+    },
+    "/api/auth/clave": {
+      "post": {
+        "tags": [
+          "Autenticación"
+        ],
+        "summary": "Cambiar mi contraseña",
+        "description": "El usuario de la sesión cambia su propia clave (mínimo 8 caracteres). Sirve para todos los roles.\nLa sesión actual sigue vigente.\n\nErrores: `422 CLAVE_ACTUAL_INCORRECTA`, `422 CLAVE_REPETIDA` (igual a la actual), `400 VALIDACION`.",
+        "operationId": "cambiarClave",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CambioClaveRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "400": {
+            "description": "Datos inválidos. `campos` indica cuáles.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sin sesión o token vencido: vuelve a iniciar sesión.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Tu rol no tiene permiso para esta operación.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Clave actual incorrecta (`CLAVE_ACTUAL_INCORRECTA`) o clave nueva igual a la actual (`CLAVE_REPETIDA`).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/zonas": {
+      "get": {
+        "tags": [
+          "Administración · zonas"
+        ],
+        "summary": "Listar distrito y sectores (activos e inactivos)",
+        "operationId": "listar",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ZonaAdminResponse"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sin sesión o token vencido: vuelve a iniciar sesión.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Tu rol no tiene permiso para esta operación.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Administración · zonas"
+        ],
+        "summary": "Crear un sector dibujando su polígono (GeoJSON)",
+        "operationId": "crear",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CrearZona"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ZonaAdminResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Datos inválidos. `campos` indica cuáles.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sin sesión o token vencido: vuelve a iniciar sesión.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Tu rol no tiene permiso para esta operación.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicto con el estado actual (revisa `codigo`).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "No cumple una regla de negocio (revisa `codigo` y `mensaje`).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/zonas/recalcular": {
+      "post": {
+        "tags": [
+          "Administración · zonas"
+        ],
+        "summary": "Recalcular el sector de todas las alertas",
+        "operationId": "recalcular",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "integer",
+                  "format": "int32"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sin sesión o token vencido: vuelve a iniciar sesión.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Tu rol no tiene permiso para esta operación.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicto con el estado actual (revisa `codigo`).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "No cumple una regla de negocio (revisa `codigo` y `mensaje`).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/zonas/cuadricula": {
+      "post": {
+        "tags": [
+          "Administración · zonas"
+        ],
+        "summary": "Generar sectores dividiendo el distrito en una cuadrícula",
+        "operationId": "cuadricula",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GenerarCuadricula"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ZonaAdminResponse"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Datos inválidos. `campos` indica cuáles.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sin sesión o token vencido: vuelve a iniciar sesión.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Tu rol no tiene permiso para esta operación.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicto con el estado actual (revisa `codigo`).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "No cumple una regla de negocio (revisa `codigo` y `mensaje`).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/usuarios": {
+      "get": {
+        "tags": [
+          "Administración · usuarios"
+        ],
+        "summary": "Listar usuarios (filtros: rol, q, sinUnidad)",
+        "operationId": "listar_1",
+        "parameters": [
+          {
+            "name": "rol",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sinUnidad",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false
+            }
+          },
+          {
+            "name": "limite",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 200
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/UsuarioAdminResponse"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sin sesión o token vencido: vuelve a iniciar sesión.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Tu rol no tiene permiso para esta operación.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Administración · usuarios"
+        ],
+        "summary": "Crear un usuario",
+        "operationId": "crear_1",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CrearUsuario"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/UsuarioAdminResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Datos inválidos. `campos` indica cuáles.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sin sesión o token vencido: vuelve a iniciar sesión.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Tu rol no tiene permiso para esta operación.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicto con el estado actual (revisa `codigo`).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "No cumple una regla de negocio (revisa `codigo` y `mensaje`).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/usuarios/{id}/clave": {
+      "post": {
+        "tags": [
+          "Administración · usuarios"
+        ],
+        "summary": "Reiniciar la contraseña de un usuario",
+        "operationId": "reiniciarClave",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NuevaClave"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/UsuarioAdminResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Datos inválidos. `campos` indica cuáles.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sin sesión o token vencido: vuelve a iniciar sesión.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Tu rol no tiene permiso para esta operación.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No existe (`NO_ENCONTRADO`).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicto con el estado actual (revisa `codigo`).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "No cumple una regla de negocio (revisa `codigo` y `mensaje`).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/unidades": {
+      "get": {
+        "tags": [
+          "Administración · unidades"
+        ],
+        "summary": "Listar unidades (activas e inactivas)",
+        "operationId": "listar_2",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/UnidadAdminResponse"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sin sesión o token vencido: vuelve a iniciar sesión.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Tu rol no tiene permiso para esta operación.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Administración · unidades"
+        ],
+        "summary": "Crear una unidad",
+        "operationId": "crear_2",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CrearUnidad"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnidadAdminResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Datos inválidos. `campos` indica cuáles.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sin sesión o token vencido: vuelve a iniciar sesión.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Tu rol no tiene permiso para esta operación.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicto con el estado actual (revisa `codigo`).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "No cumple una regla de negocio (revisa `codigo` y `mensaje`).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/zonas/{id}/activo": {
+      "patch": {
+        "tags": [
+          "Administración · zonas"
+        ],
+        "summary": "Activar o desactivar un sector",
+        "operationId": "cambiarActivo",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CambioActivo"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ZonaAdminResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Datos inválidos. `campos` indica cuáles.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sin sesión o token vencido: vuelve a iniciar sesión.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Tu rol no tiene permiso para esta operación.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No existe (`NO_ENCONTRADO`).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicto con el estado actual (revisa `codigo`).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "No cumple una regla de negocio (revisa `codigo` y `mensaje`).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/usuarios/{id}/activo": {
+      "patch": {
+        "tags": [
+          "Administración · usuarios"
+        ],
+        "summary": "Activar o desactivar un usuario",
+        "operationId": "cambiarActivo_1",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CambioActivo"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/UsuarioAdminResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Datos inválidos. `campos` indica cuáles.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sin sesión o token vencido: vuelve a iniciar sesión.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Tu rol no tiene permiso para esta operación.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No existe (`NO_ENCONTRADO`).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicto con el estado actual (revisa `codigo`).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "No cumple una regla de negocio (revisa `codigo` y `mensaje`).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/unidades/{id}/activo": {
+      "patch": {
+        "tags": [
+          "Administración · unidades"
+        ],
+        "summary": "Activar o desactivar una unidad",
+        "operationId": "cambiarActivo_2",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CambioActivo"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnidadAdminResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Datos inválidos. `campos` indica cuáles.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sin sesión o token vencido: vuelve a iniciar sesión.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Tu rol no tiene permiso para esta operación.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No existe (`NO_ENCONTRADO`).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicto con el estado actual (revisa `codigo`).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "No cumple una regla de negocio (revisa `codigo` y `mensaje`).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/monitoreo/zonas": {
+      "get": {
+        "tags": [
+          "Central · resumen y zonas"
+        ],
+        "summary": "Zonas del mapa (límite del distrito y sectores) en GeoJSON",
+        "operationId": "zonas",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ZonaResponse"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sin sesión o token vencido: vuelve a iniciar sesión.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Tu rol no tiene permiso para esta operación.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/monitoreo/unidades": {
+      "get": {
+        "tags": [
+          "Central · unidades"
+        ],
+        "summary": "Unidades activas en tiempo real",
+        "operationId": "listar_3",
+        "parameters": [
+          {
+            "name": "estado",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/UnidadMonitoreoResponse"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sin sesión o token vencido: vuelve a iniciar sesión.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Tu rol no tiene permiso para esta operación.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/monitoreo/resumen": {
+      "get": {
+        "tags": [
+          "Central · resumen y zonas"
+        ],
+        "summary": "Indicadores del día para el centro de monitoreo",
+        "operationId": "resumen",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResumenResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sin sesión o token vencido: vuelve a iniciar sesión.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Tu rol no tiene permiso para esta operación.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/monitoreo/reportes": {
+      "get": {
+        "tags": [
+          "Central · reportes"
+        ],
+        "summary": "Reporte de un rango de fechas",
+        "operationId": "reporte",
+        "parameters": [
+          {
+            "name": "desde",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "hasta",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReporteResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sin sesión o token vencido: vuelve a iniciar sesión.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Tu rol no tiene permiso para esta operación.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/monitoreo/alertas": {
+      "get": {
+        "tags": [
+          "Central · alertas"
+        ],
+        "summary": "Listar alertas (activas por defecto; ?todas=true incluye las cerradas)",
+        "operationId": "listar_4",
+        "parameters": [
+          {
+            "name": "estado",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "todas",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false
+            }
+          },
+          {
+            "name": "limite",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 100
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AlertaMonitoreoResponse"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sin sesión o token vencido: vuelve a iniciar sesión.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Tu rol no tiene permiso para esta operación.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/monitoreo/alertas/{id}": {
+      "get": {
+        "tags": [
+          "Central · alertas"
+        ],
+        "summary": "Detalle de una alerta con su historial",
+        "operationId": "detalle",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AlertaDetalleResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sin sesión o token vencido: vuelve a iniciar sesión.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Tu rol no tiene permiso para esta operación.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No existe (`NO_ENCONTRADO`).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/monitoreo/alertas/{id}/evidencias": {
+      "get": {
+        "tags": [
+          "Evidencias"
+        ],
+        "summary": "Evidencias de una alerta (central)",
+        "description": "Todas las evidencias, la más antigua primero.",
+        "operationId": "listarCentral",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/EvidenciaResponse"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sin sesión o token vencido: vuelve a iniciar sesión.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Tu rol no tiene permiso para esta operación.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No existe (`NO_ENCONTRADO`).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/monitoreo/alertas/{id}/candidatas": {
+      "get": {
+        "tags": [
+          "Central · intervención"
+        ],
+        "summary": "Unidades que la central puede elegir para una alerta",
+        "operationId": "candidatas",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CandidataResponse"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sin sesión o token vencido: vuelve a iniciar sesión.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Tu rol no tiene permiso para esta operación.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No existe (`NO_ENCONTRADO`).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/evidencias/{id}/archivo": {
+      "get": {
+        "tags": [
+          "Evidencias"
+        ],
+        "summary": "Descargar la foto o el video de una evidencia",
+        "description": "Devuelve el archivo (`image/jpeg`, `image/png`, `image/webp` o `video/mp4`). Requiere el token. Lo puede\npedir la central, el ciudadano dueño de la alerta y el sereno que la atendió; para cualquier otro\nusuario, o si es una nota sin archivo, responde `404 NO_ENCONTRADO`.",
+        "operationId": "archivo",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "El archivo",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sin sesión o token vencido: vuelve a iniciar sesión.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Tu rol no tiene permiso para esta operación.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No existe (`NO_ENCONTRADO`).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/me": {
+      "get": {
+        "tags": [
+          "Autenticación"
+        ],
+        "summary": "Usuario de la sesión",
+        "description": "Devuelve el usuario del token. Úsalo al abrir la app para confirmar que la sesión sigue vigente.",
+        "operationId": "me",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/UsuarioResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sin sesión o token vencido: vuelve a iniciar sesión.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Tu rol no tiene permiso para esta operación.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/parametros": {
+      "get": {
+        "tags": [
+          "Administración · parámetros"
+        ],
+        "summary": "Listar los parámetros del motor",
+        "operationId": "listar_5",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ParametroResponse"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sin sesión o token vencido: vuelve a iniciar sesión.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Tu rol no tiene permiso para esta operación.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/auditoria": {
+      "get": {
+        "tags": [
+          "Administración · auditoría"
+        ],
+        "summary": "Listar la auditoría",
+        "description": "Más reciente primero. Filtros opcionales: `accion` (exacta), `q` (texto en el detalle, el nombre o el DNI) y `desde`/`hasta` (AAAA-MM-DD, hora de Lima, ambos incluidos). `pagina` empieza en 0; `tamano` máximo 100.",
+        "operationId": "listar_6",
+        "parameters": [
+          {
+            "name": "accion",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "desde",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "hasta",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "pagina",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 0
+            }
+          },
+          {
+            "name": "tamano",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 25
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginaAuditoriaResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sin sesión o token vencido: vuelve a iniciar sesión.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Tu rol no tiene permiso para esta operación.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/auditoria/acciones": {
+      "get": {
+        "tags": [
+          "Administración · auditoría"
+        ],
+        "summary": "Acciones registradas",
+        "description": "Códigos de acción distintos que hay en la auditoría, para armar el filtro.",
+        "operationId": "acciones",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sin sesión o token vencido: vuelve a iniciar sesión.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Tu rol no tiene permiso para esta operación.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "RenombrarZona": {
+        "type": "object",
+        "properties": {
+          "nombre": {
+            "type": "string",
+            "maxLength": 60,
+            "minLength": 0
+          }
+        },
+        "required": [
+          "nombre"
+        ]
+      },
+      "ZonaAdminResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "nombre": {
+            "type": "string"
+          },
+          "tipo": {
+            "type": "string"
+          },
+          "activo": {
+            "type": "boolean"
+          },
+          "areaKm2": {
+            "type": "number",
+            "format": "double"
+          },
+          "alertas": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "unidades": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "geojson": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "activo",
+          "alertas",
+          "areaKm2",
+          "geojson",
+          "id",
+          "nombre",
+          "tipo",
+          "unidades"
+        ]
+      },
+      "RedefinirDistrito": {
+        "type": "object",
+        "properties": {
+          "geojson": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "geojson"
+        ]
+      },
+      "ActualizarUsuario": {
+        "type": "object",
+        "properties": {
+          "nombres": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 0
+          },
+          "apellidos": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 0
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "maxLength": 150,
+            "minLength": 0
+          },
+          "telefono": {
+            "type": "string",
+            "pattern": "\\d{9}"
+          },
+          "rol": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "apellidos",
+          "nombres",
+          "rol"
+        ]
+      },
+      "UsuarioAdminResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "dni": {
+            "type": "string"
+          },
+          "nombres": {
+            "type": "string"
+          },
+          "apellidos": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "telefono": {
+            "type": "string"
+          },
+          "rol": {
+            "type": "string"
+          },
+          "activo": {
+            "type": "boolean"
+          },
+          "unidadCodigo": {
+            "type": "string"
+          },
+          "creadoEn": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "activo",
+          "apellidos",
+          "creadoEn",
+          "dni",
+          "email",
+          "id",
+          "nombres",
+          "rol",
+          "telefono",
+          "unidadCodigo"
+        ]
+      },
+      "ActualizarUnidad": {
+        "type": "object",
+        "properties": {
+          "placa": {
+            "type": "string",
+            "maxLength": 10,
+            "minLength": 0
+          },
+          "tipo": {
+            "type": "string",
+            "pattern": "CAMIONETA|MOTO|PATRULLERO|OTRO"
+          },
+          "serenoId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "zonaId": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "UnidadAdminResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "codigo": {
+            "type": "string"
+          },
+          "placa": {
+            "type": "string"
+          },
+          "tipo": {
+            "type": "string"
+          },
+          "activo": {
+            "type": "boolean"
+          },
+          "estado": {
+            "type": "string"
+          },
+          "serenoId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "sereno": {
+            "type": "string"
+          },
+          "latitud": {
+            "type": "number",
+            "format": "double"
+          },
+          "longitud": {
+            "type": "number",
+            "format": "double"
+          },
+          "zonaId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "zona": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "activo",
+          "codigo",
+          "estado",
+          "id",
+          "latitud",
+          "longitud",
+          "placa",
+          "sereno",
+          "serenoId",
+          "tipo",
+          "zona",
+          "zonaId"
+        ]
+      },
+      "CambioParametro": {
+        "type": "object",
+        "properties": {
+          "valor": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "valor"
+        ]
+      },
+      "ParametroResponse": {
+        "type": "object",
+        "properties": {
+          "clave": {
+            "type": "string"
+          },
+          "valor": {
+            "type": "string"
+          },
+          "descripcion": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "clave",
+          "descripcion",
+          "valor"
+        ]
+      },
+      "Cancelacion": {
+        "type": "object",
+        "properties": {
+          "motivo": {
+            "type": "string",
+            "minLength": 1
+          },
+          "observacion": {
+            "type": "string",
+            "maxLength": 300,
+            "minLength": 0
+          }
+        },
+        "required": [
+          "motivo"
+        ]
+      },
+      "AlertaDetalleResponse": {
+        "type": "object",
+        "properties": {
+          "alerta": {
+            "$ref": "#/components/schemas/AlertaMonitoreoResponse"
+          },
+          "historial": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EventoResponse"
+            }
+          }
+        },
+        "required": [
+          "alerta",
+          "historial"
+        ]
+      },
+      "AlertaMonitoreoResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "tipo": {
+            "type": "string"
+          },
+          "tipoNombre": {
+            "type": "string"
+          },
+          "prioridad": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "descripcion": {
+            "type": "string"
+          },
+          "latitud": {
+            "type": "number",
+            "format": "double"
+          },
+          "longitud": {
+            "type": "number",
+            "format": "double"
+          },
+          "referencia": {
+            "type": "string"
+          },
+          "estado": {
+            "type": "string"
+          },
+          "resultado": {
+            "type": "string"
+          },
+          "ciudadano": {
+            "type": "string"
+          },
+          "ciudadanoTelefono": {
+            "type": "string"
+          },
+          "unidadCodigo": {
+            "type": "string"
+          },
+          "creadaEn": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "finalizadaEn": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "ciudadano",
+          "ciudadanoTelefono",
+          "creadaEn",
+          "descripcion",
+          "estado",
+          "finalizadaEn",
+          "id",
+          "latitud",
+          "longitud",
+          "prioridad",
+          "referencia",
+          "resultado",
+          "tipo",
+          "tipoNombre",
+          "unidadCodigo"
+        ]
+      },
+      "EventoResponse": {
+        "type": "object",
+        "properties": {
+          "tipo": {
+            "type": "string"
+          },
+          "detalle": {
+            "type": "string"
+          },
+          "unidadCodigo": {
+            "type": "string"
+          },
+          "usuario": {
+            "type": "string"
+          },
+          "creadoEn": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "creadoEn",
+          "detalle",
+          "tipo",
+          "unidadCodigo",
+          "usuario"
+        ]
+      },
+      "AsignacionManual": {
+        "type": "object",
+        "properties": {
+          "unidadId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "motivo": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 0
+          }
+        },
+        "required": [
+          "motivo",
+          "unidadId"
+        ]
+      },
+      "RegistroRequest": {
+        "type": "object",
+        "properties": {
+          "dni": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "\\d{8}"
+          },
+          "nombres": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 0
+          },
+          "apellidos": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 0
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "maxLength": 150,
+            "minLength": 0
+          },
+          "telefono": {
+            "type": "string",
+            "pattern": "\\d{9}"
+          },
+          "password": {
+            "type": "string",
+            "maxLength": 72,
+            "minLength": 8
+          }
+        },
+        "required": [
+          "apellidos",
+          "dni",
+          "nombres",
+          "password"
+        ]
+      },
+      "TokenResponse": {
+        "type": "object",
+        "properties": {
+          "token": {
+            "type": "string"
+          },
+          "tipo": {
+            "type": "string"
+          },
+          "expiraEnSegundos": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "usuario": {
+            "$ref": "#/components/schemas/UsuarioResponse"
+          }
+        },
+        "required": [
+          "expiraEnSegundos",
+          "tipo",
+          "token",
+          "usuario"
+        ]
+      },
+      "UsuarioResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "dni": {
+            "type": "string",
+            "example": "71234567"
+          },
+          "nombres": {
+            "type": "string"
+          },
+          "apellidos": {
+            "type": "string"
+          },
+          "email": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "telefono": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "rol": {
+            "type": "string",
+            "description": "Rol del usuario. La app del ciudadano solo acepta CIUDADANO y la del sereno solo SERENO",
+            "enum": [
+              "CIUDADANO",
+              "SERENO",
+              "OPERADOR",
+              "SUPERVISOR",
+              "ADMIN"
+            ]
+          }
+        },
+        "required": [
+          "apellidos",
+          "dni",
+          "id",
+          "nombres",
+          "rol"
+        ]
+      },
+      "LoginRequest": {
+        "type": "object",
+        "properties": {
+          "usuario": {
+            "type": "string",
+            "minLength": 1
+          },
+          "password": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "password",
+          "usuario"
+        ]
+      },
+      "CambioClaveRequest": {
+        "type": "object",
+        "properties": {
+          "actual": {
+            "type": "string",
+            "minLength": 1
+          },
+          "nueva": {
+            "type": "string",
+            "maxLength": 72,
+            "minLength": 8
+          }
+        },
+        "required": [
+          "actual",
+          "nueva"
+        ]
+      },
+      "CrearZona": {
+        "type": "object",
+        "properties": {
+          "nombre": {
+            "type": "string",
+            "maxLength": 60,
+            "minLength": 0
+          },
+          "geojson": {
+            "type": "string",
+            "maxLength": 300000,
+            "minLength": 0
+          }
+        },
+        "required": [
+          "geojson",
+          "nombre"
+        ]
+      },
+      "GenerarCuadricula": {
+        "type": "object",
+        "properties": {
+          "filas": {
+            "type": "integer",
+            "format": "int32",
+            "maximum": 5,
+            "minimum": 1
+          },
+          "columnas": {
+            "type": "integer",
+            "format": "int32",
+            "maximum": 5,
+            "minimum": 1
+          },
+          "reemplazar": {
+            "type": "boolean"
+          }
+        }
+      },
+      "CrearUsuario": {
+        "type": "object",
+        "properties": {
+          "dni": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "\\d{8}"
+          },
+          "nombres": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 0
+          },
+          "apellidos": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 0
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "maxLength": 150,
+            "minLength": 0
+          },
+          "telefono": {
+            "type": "string",
+            "pattern": "\\d{9}"
+          },
+          "rol": {
+            "type": "string",
+            "minLength": 1
+          },
+          "password": {
+            "type": "string",
+            "maxLength": 72,
+            "minLength": 8
+          }
+        },
+        "required": [
+          "apellidos",
+          "dni",
+          "nombres",
+          "password",
+          "rol"
+        ]
+      },
+      "NuevaClave": {
+        "type": "object",
+        "properties": {
+          "password": {
+            "type": "string",
+            "maxLength": 72,
+            "minLength": 8
+          }
+        },
+        "required": [
+          "password"
+        ]
+      },
+      "CrearUnidad": {
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "^[A-Z0-9-]{3,20}$"
+          },
+          "placa": {
+            "type": "string",
+            "maxLength": 10,
+            "minLength": 0
+          },
+          "tipo": {
+            "type": "string",
+            "pattern": "CAMIONETA|MOTO|PATRULLERO|OTRO"
+          },
+          "serenoId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "zonaId": {
+            "type": "integer",
+            "format": "int64"
+          }
+        },
+        "required": [
+          "codigo"
+        ]
+      },
+      "CambioActivo": {
+        "type": "object",
+        "properties": {
+          "activo": {
+            "type": "boolean"
+          }
+        }
+      },
+      "ZonaResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "nombre": {
+            "type": "string"
+          },
+          "tipo": {
+            "type": "string"
+          },
+          "geojson": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "geojson",
+          "id",
+          "nombre",
+          "tipo"
+        ]
+      },
+      "UnidadMonitoreoResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "codigo": {
+            "type": "string"
+          },
+          "placa": {
+            "type": "string"
+          },
+          "tipo": {
+            "type": "string"
+          },
+          "estado": {
+            "type": "string"
+          },
+          "sereno": {
+            "type": "string"
+          },
+          "latitud": {
+            "type": "number",
+            "format": "double"
+          },
+          "longitud": {
+            "type": "number",
+            "format": "double"
+          },
+          "ubicacionEn": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "velocidadKmh": {
+            "type": "number",
+            "format": "double"
+          },
+          "alertaActualId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "activo": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "activo",
+          "alertaActualId",
+          "codigo",
+          "estado",
+          "id",
+          "latitud",
+          "longitud",
+          "placa",
+          "sereno",
+          "tipo",
+          "ubicacionEn",
+          "velocidadKmh"
+        ]
+      },
+      "ResumenResponse": {
+        "type": "object",
+        "properties": {
+          "alertasActivas": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "alertasSinUnidad": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "unidadesDisponibles": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "unidadesEnRuta": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "unidadesEnAtencion": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "unidadesFueraDeServicio": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "unidadesTotal": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "atendidasHoy": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "reasignadasHoy": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "tiempoRespuestaSeg": {
+            "type": "number",
+            "format": "double"
+          },
+          "tiempoLlegadaSeg": {
+            "type": "number",
+            "format": "double"
+          }
+        },
+        "required": [
+          "alertasActivas",
+          "alertasSinUnidad",
+          "atendidasHoy",
+          "reasignadasHoy",
+          "tiempoLlegadaSeg",
+          "tiempoRespuestaSeg",
+          "unidadesDisponibles",
+          "unidadesEnAtencion",
+          "unidadesEnRuta",
+          "unidadesFueraDeServicio",
+          "unidadesTotal"
+        ]
+      },
+      "ActividadUnidad": {
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "type": "string"
+          },
+          "sereno": {
+            "type": "string"
+          },
+          "asignaciones": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "atendidas": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "rechazadas": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "sinRespuesta": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "tiempoTrasladoSeg": {
+            "type": "number",
+            "format": "double"
+          }
+        }
+      },
+      "Conteo": {
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "type": "string"
+          },
+          "nombre": {
+            "type": "string"
+          },
+          "total": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "Indicadores": {
+        "type": "object",
+        "properties": {
+          "total": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "atendidas": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "canceladas": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "activas": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "escaladas": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "reasignadas": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "tiempoAsignacionSeg": {
+            "type": "number",
+            "format": "double"
+          },
+          "tiempoAceptacionSeg": {
+            "type": "number",
+            "format": "double"
+          },
+          "tiempoLlegadaSeg": {
+            "type": "number",
+            "format": "double"
+          },
+          "tiempoAtencionSeg": {
+            "type": "number",
+            "format": "double"
+          }
+        }
+      },
+      "PuntoDia": {
+        "type": "object",
+        "properties": {
+          "fecha": {
+            "type": "string",
+            "format": "date"
+          },
+          "total": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "tiempoLlegadaSeg": {
+            "type": "number",
+            "format": "double"
+          }
+        }
+      },
+      "PuntoHora": {
+        "type": "object",
+        "properties": {
+          "hora": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "total": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "ReporteResponse": {
+        "type": "object",
+        "properties": {
+          "desde": {
+            "type": "string",
+            "format": "date"
+          },
+          "hasta": {
+            "type": "string",
+            "format": "date"
+          },
+          "indicadores": {
+            "$ref": "#/components/schemas/Indicadores"
+          },
+          "porDia": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PuntoDia"
+            }
+          },
+          "porHora": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PuntoHora"
+            }
+          },
+          "porTipo": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Conteo"
+            }
+          },
+          "porZona": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Conteo"
+            }
+          },
+          "motivosReasignacion": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Conteo"
+            }
+          },
+          "unidades": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ActividadUnidad"
+            }
+          }
+        },
+        "required": [
+          "desde",
+          "hasta",
+          "indicadores",
+          "motivosReasignacion",
+          "porDia",
+          "porHora",
+          "porTipo",
+          "porZona",
+          "unidades"
+        ]
+      },
+      "EvidenciaResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "alertaId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "origen": {
+            "type": "string",
+            "enum": [
+              "CIUDADANO",
+              "SERENO"
+            ]
+          },
+          "tipo": {
+            "type": "string",
+            "description": "NOTA = solo texto, sin archivo",
+            "enum": [
+              "FOTO",
+              "VIDEO",
+              "NOTA"
+            ]
+          },
+          "observacion": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "autor": {
+            "type": "string",
+            "description": "Nombre de quien la subió",
+            "example": "Carla Soto"
+          },
+          "conArchivo": {
+            "type": "boolean",
+            "description": "true si tiene archivo que descargar (foto o video)"
+          },
+          "creadoEn": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "alertaId",
+          "autor",
+          "conArchivo",
+          "creadoEn",
+          "id",
+          "origen",
+          "tipo"
+        ]
+      },
+      "CandidataResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "codigo": {
+            "type": "string"
+          },
+          "sereno": {
+            "type": "string"
+          },
+          "estado": {
+            "type": "string"
+          },
+          "distanciaM": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "etaSegundos": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "ubicacionEn": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "asignable": {
+            "type": "boolean"
+          },
+          "motivoNoDisponible": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "asignable",
+          "codigo",
+          "distanciaM",
+          "estado",
+          "etaSegundos",
+          "id",
+          "motivoNoDisponible",
+          "sereno",
+          "ubicacionEn"
+        ]
+      },
+      "PaginaAuditoriaResponse": {
+        "type": "object",
+        "properties": {
+          "total": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "pagina": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "tamano": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RegistroAuditoriaResponse"
+            }
+          }
+        },
+        "required": [
+          "items",
+          "pagina",
+          "tamano",
+          "total"
+        ]
+      },
+      "RegistroAuditoriaResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "usuario": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Nombre de quien hizo la acción; null = el sistema o un intento sin sesión"
+          },
+          "dni": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "DNI de quien hizo la acción"
+          },
+          "accion": {
+            "type": "string",
+            "example": "ASIGNACION_MANUAL"
+          },
+          "entidad": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "entidadId": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64"
+          },
+          "detalle": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "ip": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "dispositivo": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "creadoEn": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "accion",
+          "creadoEn",
+          "id"
+        ]
+      },
+      "ErrorApi": {
+        "type": "object",
+        "description": "Error de la API. 'campos' solo aparece en errores de validacion (HTTP 400).",
+        "properties": {
+          "codigo": {
+            "type": "string",
+            "description": "Codigo estable para que la app decida qué mostrar",
+            "example": "FUERA_DE_COBERTURA"
+          },
+          "mensaje": {
+            "type": "string",
+            "description": "Texto listo para mostrar al usuario"
+          },
+          "campos": {
+            "type": "object",
+            "additionalProperties": true,
+            "description": "Objeto { nombreDelCampo: mensaje } (solo en HTTP 400). Ej.: { \"dni\": \"El DNI debe tener 8 digitos\" }"
+          }
+        }
+      }
+    },
+    "securitySchemes": {
+      "jwt": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    }
+  }
+}

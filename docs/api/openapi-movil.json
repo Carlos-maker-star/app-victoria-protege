@@ -1,0 +1,2414 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "La Victoria Protege · API",
+    "description": "Sistema de seguridad ciudadana del distrito de La Victoria (Chiclayo).\n\n**Autenticación:** `POST /api/auth/login` devuelve un token JWT. Envíalo en cada petición como\n`Authorization: Bearer <token>`. Dura 12 horas.\n\n**Tiempo real:** además de esta API REST hay un WebSocket (STOMP) en `/ws`; no forma parte de\nOpenAPI y está descrito en la guía `docs/api/GUIA-MOVILES.md`.\n\n**Errores:** todos los errores tienen la forma `{ codigo, mensaje, campos }`. Muestra `mensaje`\nal usuario y decide la lógica con `codigo`.\n",
+    "version": "1.0"
+  },
+  "servers": [
+    {
+      "url": "http://localhost:8080",
+      "description": "Desarrollo local"
+    }
+  ],
+  "security": [
+    {
+      "jwt": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Ciudadano · alertas",
+      "description": "Lo que hace la app del vecino. Rol requerido: `CIUDADANO`."
+    },
+    {
+      "name": "Sereno",
+      "description": "Lo que hace la app del sereno. Rol requerido: `SERENO`. **Todas las acciones devuelven el mismo objeto**\n(`EstadoSerenoResponse`: la unidad y su asignación vigente), así la app siempre se actualiza con la respuesta.\n\nUn sereno opera la unidad que le asignó el administrador. Si no tiene unidad: `409 SIN_UNIDAD_ASIGNADA`.\n\n**Ciclo de una alerta:** (1) llega una asignación `PENDIENTE_RESPUESTA` con un temporizador\n(`segundosRestantes`, 15 s por defecto) → (2) `aceptar` o `rechazar` (si no responde, el sistema la reasigna y deja\nla unidad fuera de servicio) → (3) en camino: enviar la posición cada 1–3 s; la llegada se detecta sola por GPS\n(también se puede marcar con `llegada`) → (4) `iniciar-atencion` (opcional) → (5) `finalizar` con el resultado →\n(6) «continuar operando» = `POST /estado` con `DISPONIBLE`, o «finalizar sesión» = `FUERA_DE_SERVICIO`.\n\nErrores comunes de las acciones sobre una asignación: `409 ASIGNACION_NO_VIGENTE` (ya fue reasignada, cancelada\no ya respondiste) y `409 ASIGNACION_VENCIDA` (se acabó el tiempo; al aceptar). Ante cualquiera, vuelve a leer\nel estado."
+    },
+    {
+      "name": "Autenticación",
+      "description": "Inicio de sesión y registro. Compartido por las apps y la web."
+    },
+    {
+      "name": "Evidencias",
+      "description": "Fotos, videos y notas que el ciudadano y el sereno adjuntan a una alerta; la central las ve en el detalle.\nSe suben como `multipart/form-data` con `archivo` (opcional) y `observacion` (opcional, hasta 500 caracteres);\nhay que enviar al menos uno. Fotos JPG, PNG o WebP (hasta 8 MB) y video MP4 (hasta 40 MB); el tipo se\nreconoce por el contenido del archivo, no por su extensión. Máximo 10 evidencias por alerta y por origen.\nPara mostrar una foto o video hay que pedir `GET /api/evidencias/{id}/archivo` **con el token** (una etiqueta\nde imagen sin cabecera no sirve: descarga el archivo y muéstralo desde la memoria)."
+    }
+  ],
+  "paths": {
+    "/api/sereno/posicion": {
+      "post": {
+        "tags": [
+          "Sereno"
+        ],
+        "summary": "Enviar mi posición GPS",
+        "description": "Envíala **cada 1–3 s** mientras la app esté abierta y operando: la central la dibuja en el mapa y el\nmotor solo considera unidades con posición de los últimos 2 minutos. La respuesta incluye la\nasignación vigente, así que sirve también para **detectar una alerta nueva** si no hay WebSocket.\nSi vas en camino y llegas a menos de 30 m de la alerta, el sistema marca la llegada solo.\n`velocidadKmh` es opcional.",
+        "operationId": "posicion",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Posicion"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/EstadoSerenoResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Datos inválidos. `campos` indica cuáles.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sin sesión o token vencido: vuelve a iniciar sesión.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Tu rol no tiene permiso para esta operación.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicto con el estado actual o el sereno no tiene unidad (revisa `codigo`).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "No cumple una regla de negocio (revisa `codigo` y `mensaje`).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/sereno/estado": {
+      "get": {
+        "tags": [
+          "Sereno"
+        ],
+        "summary": "Estado de mi unidad",
+        "description": "Estado actual y asignación vigente (si la hay). Úsalo al abrir la app.",
+        "operationId": "estado",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/EstadoSerenoResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sin sesión o token vencido: vuelve a iniciar sesión.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Tu rol no tiene permiso para esta operación.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicto con el estado actual o el sereno no tiene unidad (revisa `codigo`).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Sereno"
+        ],
+        "summary": "Cambiar mi estado (continuar operando / finalizar sesión)",
+        "description": "Solo `DISPONIBLE` (empieza o continúa operando) o `FUERA_DE_SERVICIO` (finaliza la sesión). Los demás\nestados (`EN_DESPLAZAMIENTO`, `EN_ATENCION`) los pone el sistema según la alerta.\nErrores: `422 ESTADO_INVALIDO`; `409` si tienes una alerta en curso.",
+        "operationId": "cambiarEstado",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CambiarEstado"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/EstadoSerenoResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Datos inválidos. `campos` indica cuáles.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sin sesión o token vencido: vuelve a iniciar sesión.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Tu rol no tiene permiso para esta operación.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicto con el estado actual o el sereno no tiene unidad (revisa `codigo`).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "No cumple una regla de negocio (revisa `codigo` y `mensaje`).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/sereno/asignaciones/{id}/rechazar": {
+      "post": {
+        "tags": [
+          "Sereno"
+        ],
+        "summary": "NO PUEDO ATENDER",
+        "description": "Rechaza con un motivo; el sistema **reasigna al instante** a otra unidad (la alerta no se pierde).\n`motivo`: `OTRA_INCIDENCIA`, `EMERGENCIA`, `UNIDAD_OCUPADA`, `FUERA_DE_SERVICIO`,\n`SIN_DESPLAZAMIENTO`, `SIN_DISPONIBILIDAD` u `OTRO` (este exige `detalle`).\nSegún el motivo, tu unidad queda `EN_ATENCION` (ocupada) o `FUERA_DE_SERVICIO`; cuando puedas volver,\nusa `POST /estado` con `DISPONIBLE`.\nErrores: `422 MOTIVO_INVALIDO`, `422 DETALLE_REQUERIDO`, `409 ASIGNACION_NO_VIGENTE`.",
+        "operationId": "rechazar",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Rechazo"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/EstadoSerenoResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Datos inválidos. `campos` indica cuáles.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sin sesión o token vencido: vuelve a iniciar sesión.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Tu rol no tiene permiso para esta operación.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No existe (`NO_ENCONTRADO`).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicto con el estado actual o el sereno no tiene unidad (revisa `codigo`).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "No cumple una regla de negocio (revisa `codigo` y `mensaje`).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/sereno/asignaciones/{id}/llegada": {
+      "post": {
+        "tags": [
+          "Sereno"
+        ],
+        "summary": "HAS LLEGADO A LA ALERTA (manual)",
+        "description": "Normalmente la llegada se detecta sola por GPS; esto es un respaldo (por ejemplo, GPS impreciso). Unidad `EN_ATENCION`, alerta `LLEGO`.",
+        "operationId": "llegada",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/EstadoSerenoResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sin sesión o token vencido: vuelve a iniciar sesión.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Tu rol no tiene permiso para esta operación.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No existe (`NO_ENCONTRADO`).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicto con el estado actual o el sereno no tiene unidad (revisa `codigo`).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "No cumple una regla de negocio (revisa `codigo` y `mensaje`).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/sereno/asignaciones/{id}/iniciar-atencion": {
+      "post": {
+        "tags": [
+          "Sereno"
+        ],
+        "summary": "REGISTRAR ATENCIÓN",
+        "description": "Marca «atención en proceso» (el ciudadano lo ve). Opcional: se puede finalizar directamente.",
+        "operationId": "iniciarAtencion",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/EstadoSerenoResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sin sesión o token vencido: vuelve a iniciar sesión.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Tu rol no tiene permiso para esta operación.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No existe (`NO_ENCONTRADO`).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicto con el estado actual o el sereno no tiene unidad (revisa `codigo`).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "No cumple una regla de negocio (revisa `codigo` y `mensaje`).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/sereno/asignaciones/{id}/finalizar": {
+      "post": {
+        "tags": [
+          "Sereno"
+        ],
+        "summary": "FINALIZAR ATENCIÓN",
+        "description": "Cierra la alerta con un `resultado`: `ATENDIDA`, `SIN_NOVEDAD`, `FALSA_ALARMA`, `DERIVADA`,\n`REQUIERE_APOYO`, `PENDIENTE` u `OTRO`, y una `observacion` opcional. La unidad queda `EN_ATENCION` hasta\nque el sereno elija «continuar operando» (`POST /estado` con `DISPONIBLE`) o «finalizar sesión».\nError: `422 RESULTADO_INVALIDO`. (Las evidencias —fotos y videos— aún no están disponibles.)",
+        "operationId": "finalizar",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Finalizacion"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/EstadoSerenoResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Datos inválidos. `campos` indica cuáles.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sin sesión o token vencido: vuelve a iniciar sesión.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Tu rol no tiene permiso para esta operación.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No existe (`NO_ENCONTRADO`).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicto con el estado actual o el sereno no tiene unidad (revisa `codigo`).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "No cumple una regla de negocio (revisa `codigo` y `mensaje`).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/sereno/asignaciones/{id}/aceptar": {
+      "post": {
+        "tags": [
+          "Sereno"
+        ],
+        "summary": "ACEPTAR ALERTA",
+        "description": "La unidad pasa a `EN_DESPLAZAMIENTO` y la alerta a `EN_CAMINO`. Errores: `409 ASIGNACION_VENCIDA`, `409 ASIGNACION_NO_VIGENTE`.",
+        "operationId": "aceptar",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/EstadoSerenoResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sin sesión o token vencido: vuelve a iniciar sesión.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Tu rol no tiene permiso para esta operación.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No existe (`NO_ENCONTRADO`).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicto con el estado actual o el sereno no tiene unidad (revisa `codigo`).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "No cumple una regla de negocio (revisa `codigo` y `mensaje`).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/sereno/alertas/{id}/evidencias": {
+      "post": {
+        "tags": [
+          "Evidencias"
+        ],
+        "summary": "Adjuntar evidencia a una alerta atendida (sereno)",
+        "description": "`{id}` es el **id de la alerta** (`alertaId` de la asignación). Sirve mientras tu unidad la tenga\naceptada y también después de finalizarla. Errores: `404 NO_ENCONTRADO` (no la tienes asignada),\n`422 EVIDENCIA_VACIA`, `422 ARCHIVO_NO_PERMITIDO`, `422 ARCHIVO_MUY_GRANDE`, `422 NOTA_MUY_LARGA`,\n`422 LIMITE_EVIDENCIAS`.",
+        "operationId": "subirSereno",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "observacion",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "archivo": {
+                    "type": "string",
+                    "format": "binary"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/EvidenciaResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Datos inválidos. `campos` indica cuáles.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sin sesión o token vencido: vuelve a iniciar sesión.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Tu rol no tiene permiso para esta operación.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No existe (`NO_ENCONTRADO`).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicto con el estado actual o el sereno no tiene unidad (revisa `codigo`).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "El archivo supera el tope absoluto de subida (`ARCHIVO_MUY_GRANDE`).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "No cumple una regla de negocio (revisa `codigo` y `mensaje`).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/ciudadano/alertas": {
+      "get": {
+        "tags": [
+          "Ciudadano · alertas"
+        ],
+        "summary": "Mi historial de alertas",
+        "description": "Las últimas 100 alertas del ciudadano, la más reciente primero.",
+        "operationId": "historial",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AlertaResponse"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sin sesión o token vencido: vuelve a iniciar sesión.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Tu rol no tiene permiso para esta operación.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Ciudadano · alertas"
+        ],
+        "summary": "Reportar una alerta",
+        "description": "Crea la alerta y el sistema empieza a buscar una unidad **de inmediato**; la respuesta ya puede\ntraer el estado `ASIGNADA`. Para saber qué pasa después usa `GET …/{id}/seguimiento` o el WebSocket\n`/user/queue/seguimiento`.\n\n`tipo` es uno de: `ROBO`, `INCENDIO`, `ACCIDENTE`, `DISTURBIOS`, `SOSPECHOSA`, `EMERGENCIA`,\n`DESASTRE`, `OTRO`. `latitud`/`longitud` es el punto **del incidente** (el que el vecino confirma en el\nmapa); `latitudCiudadano`/`longitudCiudadano` es su GPS (opcional).\n\nErrores: `422 FUERA_DE_COBERTURA` (el punto está fuera del distrito de La Victoria, con 50 m de\ntolerancia; muestra `mensaje`, que sugiere llamar a la PNP 105), `422 TIPO_ALERTA_INVALIDO`,\n`409 ALERTA_ACTIVA_EXISTENTE` (solo se permite una alerta activa por ciudadano), `400 VALIDACION`.",
+        "operationId": "crear",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CrearAlertaRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AlertaResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Datos inválidos. `campos` indica cuáles.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sin sesión o token vencido: vuelve a iniciar sesión.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Tu rol no tiene permiso para esta operación.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicto con el estado actual (revisa `codigo`).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "No cumple una regla de negocio (revisa `codigo` y `mensaje`).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/ciudadano/alertas/{id}/evidencias": {
+      "get": {
+        "tags": [
+          "Evidencias"
+        ],
+        "summary": "Evidencias de mi alerta (ciudadano)",
+        "description": "Todas las evidencias de la alerta, la más antigua primero.",
+        "operationId": "listarCiudadano",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/EvidenciaResponse"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sin sesión o token vencido: vuelve a iniciar sesión.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Tu rol no tiene permiso para esta operación.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No existe (`NO_ENCONTRADO`).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Evidencias"
+        ],
+        "summary": "Adjuntar evidencia a mi alerta (ciudadano)",
+        "description": "Solo mientras la alerta sigue en curso. Errores: `404 NO_ENCONTRADO` (no es tu alerta),\n`409 CONFLICTO` (la alerta ya terminó), `422 EVIDENCIA_VACIA`, `422 ARCHIVO_NO_PERMITIDO`,\n`422 ARCHIVO_MUY_GRANDE`, `422 NOTA_MUY_LARGA`, `422 LIMITE_EVIDENCIAS`.",
+        "operationId": "subirCiudadano",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "observacion",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "archivo": {
+                    "type": "string",
+                    "format": "binary"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/EvidenciaResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Datos inválidos. `campos` indica cuáles.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sin sesión o token vencido: vuelve a iniciar sesión.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Tu rol no tiene permiso para esta operación.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No existe (`NO_ENCONTRADO`).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicto con el estado actual (revisa `codigo`).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "El archivo supera el tope absoluto de subida (`ARCHIVO_MUY_GRANDE`).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "No cumple una regla de negocio (revisa `codigo` y `mensaje`).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/ciudadano/alertas/{id}/cancelar": {
+      "post": {
+        "tags": [
+          "Ciudadano · alertas"
+        ],
+        "summary": "Cancelar mi alerta",
+        "description": "Solo mientras la unidad no haya llegado. Libera la unidad. Error: `409 CONFLICTO` si ya no se puede cancelar.",
+        "operationId": "cancelar",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AlertaResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sin sesión o token vencido: vuelve a iniciar sesión.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Tu rol no tiene permiso para esta operación.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No existe (`NO_ENCONTRADO`).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicto con el estado actual (revisa `codigo`).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "No cumple una regla de negocio (revisa `codigo` y `mensaje`).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/registro": {
+      "post": {
+        "tags": [
+          "Autenticación"
+        ],
+        "summary": "Registrar un ciudadano",
+        "description": "Crea una cuenta de **ciudadano** (siempre este rol) y devuelve la sesión iniciada. El personal\n(serenos, operadores…) lo crea un administrador desde la web.\n\nErrores: `409 CONFLICTO` (el DNI o el correo ya tienen cuenta), `400 VALIDACION` (campos).\nNota: por ahora no se valida la identidad contra RENIEC.",
+        "operationId": "registro",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegistroRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/TokenResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Datos inválidos. `campos` indica cuáles.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Ya existe una cuenta con ese DNI o correo (`CONFLICTO`).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          }
+        },
+        "security": []
+      }
+    },
+    "/api/auth/login": {
+      "post": {
+        "tags": [
+          "Autenticación"
+        ],
+        "summary": "Iniciar sesión",
+        "description": "Entra con el DNI (8 dígitos) o el correo y la contraseña. Devuelve el token JWT y el usuario.\nEl token lleva el rol (`CIUDADANO`, `SERENO`, `OPERADOR`, `SUPERVISOR`, `ADMIN`); la app del\nciudadano solo debe aceptar `CIUDADANO` y la del sereno solo `SERENO`.\n\nErrores: `401 NO_AUTORIZADO` (credenciales inválidas o usuario inactivo; el mensaje no dice cuál),\n`429 DEMASIADOS_INTENTOS` (5 intentos fallidos seguidos bloquean el acceso 15 minutos; `mensaje`\ndice cuánto falta).",
+        "operationId": "login",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/TokenResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Datos inválidos. `campos` indica cuáles.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Credenciales inválidas o usuario inactivo (`NO_AUTORIZADO`).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Demasiados intentos fallidos: la cuenta queda bloqueada unos minutos (`DEMASIADOS_INTENTOS`).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          }
+        },
+        "security": []
+      }
+    },
+    "/api/auth/clave": {
+      "post": {
+        "tags": [
+          "Autenticación"
+        ],
+        "summary": "Cambiar mi contraseña",
+        "description": "El usuario de la sesión cambia su propia clave (mínimo 8 caracteres). Sirve para todos los roles.\nLa sesión actual sigue vigente.\n\nErrores: `422 CLAVE_ACTUAL_INCORRECTA`, `422 CLAVE_REPETIDA` (igual a la actual), `400 VALIDACION`.",
+        "operationId": "cambiarClave",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CambioClaveRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "400": {
+            "description": "Datos inválidos. `campos` indica cuáles.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sin sesión o token vencido: vuelve a iniciar sesión.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Tu rol no tiene permiso para esta operación.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Clave actual incorrecta (`CLAVE_ACTUAL_INCORRECTA`) o clave nueva igual a la actual (`CLAVE_REPETIDA`).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/evidencias/{id}/archivo": {
+      "get": {
+        "tags": [
+          "Evidencias"
+        ],
+        "summary": "Descargar la foto o el video de una evidencia",
+        "description": "Devuelve el archivo (`image/jpeg`, `image/png`, `image/webp` o `video/mp4`). Requiere el token. Lo puede\npedir la central, el ciudadano dueño de la alerta y el sereno que la atendió; para cualquier otro\nusuario, o si es una nota sin archivo, responde `404 NO_ENCONTRADO`.",
+        "operationId": "archivo",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "El archivo",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sin sesión o token vencido: vuelve a iniciar sesión.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Tu rol no tiene permiso para esta operación.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No existe (`NO_ENCONTRADO`).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/ciudadano/alertas/{id}": {
+      "get": {
+        "tags": [
+          "Ciudadano · alertas"
+        ],
+        "summary": "Detalle de una alerta mía",
+        "description": "Error: `404 NO_ENCONTRADO` si no existe o no es del ciudadano.",
+        "operationId": "obtener",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AlertaResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sin sesión o token vencido: vuelve a iniciar sesión.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Tu rol no tiene permiso para esta operación.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No existe (`NO_ENCONTRADO`).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/ciudadano/alertas/{id}/seguimiento": {
+      "get": {
+        "tags": [
+          "Ciudadano · alertas"
+        ],
+        "summary": "Seguimiento de la alerta (pantalla de espera)",
+        "description": "Lo que debe mostrar la pantalla del ciudadano. `estado` ya está simplificado: las reasignaciones y\nlos rechazos de las unidades **no se ven**; el ciudadano solo ve `ASIGNANDO_UNIDAD` hasta que un\nsereno acepta.\n\n| estado | Qué mostrar |\n|---|---|\n| `ASIGNANDO_UNIDAD` | «Asignando unidad a tu alerta» |\n| `UNIDAD_ASIGNADA` | «Unidad asignada» (dura un instante) |\n| `UNIDAD_EN_CAMINO` | «La unidad está en camino» + mapa con `unidadLatitud/Longitud`, `distanciaM` y `etaSegundos` |\n| `UNIDAD_LLEGO` | «La unidad llegó» |\n| `ATENCION_EN_PROCESO` | «Atención en proceso» |\n| `ALERTA_ATENDIDA` | «Alerta atendida» |\n| `CANCELADA` | La alerta se canceló |\n\nCuándo consultarlo: al abrir la pantalla y, mientras haya conexión, escucha el WebSocket\n`/user/queue/seguimiento` (llega este mismo objeto). Si no hay WebSocket, consulta cada 3–5 s.\nLa unidad (`unidadCodigo` y posición) solo aparece cuando un sereno ya aceptó.",
+        "operationId": "seguimiento",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/SeguimientoResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sin sesión o token vencido: vuelve a iniciar sesión.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Tu rol no tiene permiso para esta operación.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No existe (`NO_ENCONTRADO`).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/me": {
+      "get": {
+        "tags": [
+          "Autenticación"
+        ],
+        "summary": "Usuario de la sesión",
+        "description": "Devuelve el usuario del token. Úsalo al abrir la app para confirmar que la sesión sigue vigente.",
+        "operationId": "me",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/UsuarioResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sin sesión o token vencido: vuelve a iniciar sesión.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Tu rol no tiene permiso para esta operación.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorApi"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Posicion": {
+        "type": "object",
+        "properties": {
+          "latitud": {
+            "type": "number",
+            "format": "double",
+            "description": "Latitud GPS",
+            "example": -6.8272,
+            "maximum": 90,
+            "minimum": -90
+          },
+          "longitud": {
+            "type": "number",
+            "format": "double",
+            "description": "Longitud GPS",
+            "example": -79.8693,
+            "maximum": 180,
+            "minimum": -180
+          },
+          "velocidadKmh": {
+            "type": "number",
+            "format": "double",
+            "description": "Velocidad en km/h (opcional)",
+            "example": 32,
+            "minimum": 0
+          }
+        },
+        "required": [
+          "latitud",
+          "longitud"
+        ]
+      },
+      "AsignacionResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Id de la asignación: es el {id} de aceptar, rechazar, llegada y finalizar",
+            "example": 88
+          },
+          "alertaId": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Id de la alerta",
+            "example": 152
+          },
+          "estado": {
+            "type": "string",
+            "description": "PENDIENTE_RESPUESTA = hay que aceptar o rechazar antes de `venceEn`; ACEPTADA = en curso",
+            "enum": [
+              "PENDIENTE_RESPUESTA",
+              "ACEPTADA"
+            ]
+          },
+          "orden": {
+            "type": "integer",
+            "format": "int32",
+            "description": "1 = primera unidad asignada; 2 o más = la alerta ya se reasignó"
+          },
+          "distanciaM": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "description": "Distancia en línea recta de tu unidad al incidente, en metros"
+          },
+          "etaSegundos": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "description": "Tiempo estimado de llegada, en segundos"
+          },
+          "venceEn": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Momento en que se acaba el tiempo para responder"
+          },
+          "segundosRestantes": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Segundos que quedan para responder (usa esto para la cuenta regresiva)",
+            "example": 12
+          },
+          "tipo": {
+            "type": "string",
+            "description": "Código del tipo de alerta",
+            "example": "ROBO"
+          },
+          "tipoNombre": {
+            "type": "string",
+            "description": "Nombre del tipo para mostrar",
+            "example": "Robo"
+          },
+          "descripcion": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "latitud": {
+            "type": "number",
+            "format": "double",
+            "description": "Latitud del incidente (destino)"
+          },
+          "longitud": {
+            "type": "number",
+            "format": "double",
+            "description": "Longitud del incidente (destino)"
+          },
+          "referencia": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "alertaEstado": {
+            "type": "string",
+            "description": "Estado de la alerta: EN_CAMINO tras aceptar, LLEGO al llegar, EN_ATENCION al registrar la atención"
+          },
+          "llegadaEn": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "description": "Cuándo llegó la unidad (null si aún no)"
+          }
+        },
+        "required": [
+          "alertaEstado",
+          "alertaId",
+          "estado",
+          "id",
+          "latitud",
+          "longitud",
+          "orden",
+          "segundosRestantes",
+          "tipo",
+          "tipoNombre",
+          "venceEn"
+        ]
+      },
+      "EstadoSerenoResponse": {
+        "type": "object",
+        "properties": {
+          "unidadId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "unidadCodigo": {
+            "type": "string",
+            "description": "Código de la unidad",
+            "example": "SV-001"
+          },
+          "estado": {
+            "type": "string",
+            "description": "Estado de la unidad. DISPONIBLE = recibe alertas; EN_DESPLAZAMIENTO = va en camino; EN_ATENCION = en el lugar u ocupada; FUERA_DE_SERVICIO = no recibe alertas",
+            "enum": [
+              "DISPONIBLE",
+              "EN_DESPLAZAMIENTO",
+              "EN_ATENCION",
+              "FUERA_DE_SERVICIO"
+            ]
+          },
+          "latitud": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double",
+            "description": "Última latitud enviada"
+          },
+          "longitud": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double",
+            "description": "Última longitud enviada"
+          },
+          "ubicacionEn": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "description": "Hora de la última posición"
+          },
+          "asignacion": {
+            "description": "Alerta vigente: pendiente de responder o en curso. null si no tienes ninguna",
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/AsignacionResponse"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "estado",
+          "unidadCodigo",
+          "unidadId"
+        ]
+      },
+      "CambiarEstado": {
+        "type": "object",
+        "properties": {
+          "estado": {
+            "type": "string",
+            "description": "DISPONIBLE (continuar operando) o FUERA_DE_SERVICIO (finalizar sesión)",
+            "enum": [
+              "DISPONIBLE",
+              "FUERA_DE_SERVICIO"
+            ],
+            "example": "DISPONIBLE",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "estado"
+        ]
+      },
+      "Rechazo": {
+        "type": "object",
+        "properties": {
+          "motivo": {
+            "type": "string",
+            "description": "Motivo del rechazo",
+            "enum": [
+              "OTRA_INCIDENCIA",
+              "EMERGENCIA",
+              "UNIDAD_OCUPADA",
+              "FUERA_DE_SERVICIO",
+              "SIN_DESPLAZAMIENTO",
+              "SIN_DISPONIBILIDAD",
+              "OTRO"
+            ],
+            "example": "UNIDAD_OCUPADA",
+            "minLength": 1
+          },
+          "detalle": {
+            "type": "string",
+            "description": "Obligatorio si el motivo es OTRO",
+            "maxLength": 200,
+            "minLength": 0
+          }
+        },
+        "required": [
+          "motivo"
+        ]
+      },
+      "Finalizacion": {
+        "type": "object",
+        "properties": {
+          "resultado": {
+            "type": "string",
+            "description": "Resultado de la intervención",
+            "enum": [
+              "ATENDIDA",
+              "SIN_NOVEDAD",
+              "FALSA_ALARMA",
+              "DERIVADA",
+              "REQUIERE_APOYO",
+              "PENDIENTE",
+              "OTRO"
+            ],
+            "example": "ATENDIDA",
+            "minLength": 1
+          },
+          "observacion": {
+            "type": "string",
+            "description": "Observación del sereno (opcional)",
+            "maxLength": 500,
+            "minLength": 0
+          }
+        },
+        "required": [
+          "resultado"
+        ]
+      },
+      "EvidenciaResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "alertaId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "origen": {
+            "type": "string",
+            "enum": [
+              "CIUDADANO",
+              "SERENO"
+            ]
+          },
+          "tipo": {
+            "type": "string",
+            "description": "NOTA = solo texto, sin archivo",
+            "enum": [
+              "FOTO",
+              "VIDEO",
+              "NOTA"
+            ]
+          },
+          "observacion": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "autor": {
+            "type": "string",
+            "description": "Nombre de quien la subió",
+            "example": "Carla Soto"
+          },
+          "conArchivo": {
+            "type": "boolean",
+            "description": "true si tiene archivo que descargar (foto o video)"
+          },
+          "creadoEn": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "alertaId",
+          "autor",
+          "conArchivo",
+          "creadoEn",
+          "id",
+          "origen",
+          "tipo"
+        ]
+      },
+      "CrearAlertaRequest": {
+        "type": "object",
+        "properties": {
+          "tipo": {
+            "type": "string",
+            "description": "Tipo de alerta",
+            "enum": [
+              "ROBO",
+              "INCENDIO",
+              "ACCIDENTE",
+              "DISTURBIOS",
+              "SOSPECHOSA",
+              "EMERGENCIA",
+              "DESASTRE",
+              "OTRO"
+            ],
+            "example": "ROBO",
+            "minLength": 1
+          },
+          "descripcion": {
+            "type": "string",
+            "description": "Qué está pasando (opcional)",
+            "example": "Dos sujetos arrebataron un celular",
+            "maxLength": 500,
+            "minLength": 0
+          },
+          "latitud": {
+            "type": "number",
+            "format": "double",
+            "description": "Latitud del INCIDENTE (el punto que el vecino confirma en el mapa)",
+            "example": -6.8262,
+            "maximum": 90,
+            "minimum": -90
+          },
+          "longitud": {
+            "type": "number",
+            "format": "double",
+            "description": "Longitud del INCIDENTE",
+            "example": -79.8693,
+            "maximum": 180,
+            "minimum": -180
+          },
+          "latitudCiudadano": {
+            "type": "number",
+            "format": "double",
+            "description": "Latitud del GPS del ciudadano (opcional; puede diferir del incidente)",
+            "example": -6.8263,
+            "maximum": 90,
+            "minimum": -90
+          },
+          "longitudCiudadano": {
+            "type": "number",
+            "format": "double",
+            "description": "Longitud del GPS del ciudadano (opcional)",
+            "example": -79.8694,
+            "maximum": 180,
+            "minimum": -180
+          },
+          "referencia": {
+            "type": "string",
+            "description": "Referencia escrita del lugar (opcional)",
+            "example": "Frente a la losa deportiva",
+            "maxLength": 200,
+            "minLength": 0
+          }
+        },
+        "required": [
+          "latitud",
+          "longitud",
+          "tipo"
+        ]
+      },
+      "AlertaResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Identificador de la alerta",
+            "example": 152
+          },
+          "tipo": {
+            "type": "string",
+            "description": "Código del tipo",
+            "example": "ROBO"
+          },
+          "tipoNombre": {
+            "type": "string",
+            "description": "Nombre del tipo para mostrar",
+            "example": "Robo"
+          },
+          "descripcion": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "latitud": {
+            "type": "number",
+            "format": "double",
+            "description": "Latitud del incidente"
+          },
+          "longitud": {
+            "type": "number",
+            "format": "double",
+            "description": "Longitud del incidente"
+          },
+          "referencia": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "estado": {
+            "type": "string",
+            "description": "Estado interno. Para la pantalla del ciudadano usa mejor `GET …/seguimiento`, que ya lo simplifica.",
+            "enum": [
+              "CREADA",
+              "BUSCANDO_UNIDAD",
+              "ASIGNADA",
+              "ACEPTADA",
+              "EN_CAMINO",
+              "LLEGO",
+              "EN_ATENCION",
+              "FINALIZADA",
+              "SIN_UNIDAD",
+              "CANCELADA"
+            ]
+          },
+          "resultado": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Resultado final (solo si la alerta terminó)",
+            "enum": [
+              "ATENDIDA",
+              "SIN_NOVEDAD",
+              "FALSA_ALARMA",
+              "DERIVADA",
+              "REQUIERE_APOYO",
+              "PENDIENTE",
+              "OTRO",
+              null
+            ]
+          },
+          "creadaEn": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Fecha y hora de creación (ISO 8601, UTC)"
+          },
+          "finalizadaEn": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "description": "Fecha y hora de cierre (null si sigue activa)"
+          }
+        },
+        "required": [
+          "creadaEn",
+          "estado",
+          "id",
+          "latitud",
+          "longitud",
+          "tipo",
+          "tipoNombre"
+        ]
+      },
+      "RegistroRequest": {
+        "type": "object",
+        "properties": {
+          "dni": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "\\d{8}"
+          },
+          "nombres": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 0
+          },
+          "apellidos": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 0
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "maxLength": 150,
+            "minLength": 0
+          },
+          "telefono": {
+            "type": "string",
+            "pattern": "\\d{9}"
+          },
+          "password": {
+            "type": "string",
+            "maxLength": 72,
+            "minLength": 8
+          }
+        },
+        "required": [
+          "apellidos",
+          "dni",
+          "nombres",
+          "password"
+        ]
+      },
+      "TokenResponse": {
+        "type": "object",
+        "properties": {
+          "token": {
+            "type": "string"
+          },
+          "tipo": {
+            "type": "string"
+          },
+          "expiraEnSegundos": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "usuario": {
+            "$ref": "#/components/schemas/UsuarioResponse"
+          }
+        },
+        "required": [
+          "expiraEnSegundos",
+          "tipo",
+          "token",
+          "usuario"
+        ]
+      },
+      "UsuarioResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "dni": {
+            "type": "string",
+            "example": "71234567"
+          },
+          "nombres": {
+            "type": "string"
+          },
+          "apellidos": {
+            "type": "string"
+          },
+          "email": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "telefono": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "rol": {
+            "type": "string",
+            "description": "Rol del usuario. La app del ciudadano solo acepta CIUDADANO y la del sereno solo SERENO",
+            "enum": [
+              "CIUDADANO",
+              "SERENO",
+              "OPERADOR",
+              "SUPERVISOR",
+              "ADMIN"
+            ]
+          }
+        },
+        "required": [
+          "apellidos",
+          "dni",
+          "id",
+          "nombres",
+          "rol"
+        ]
+      },
+      "LoginRequest": {
+        "type": "object",
+        "properties": {
+          "usuario": {
+            "type": "string",
+            "minLength": 1
+          },
+          "password": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "password",
+          "usuario"
+        ]
+      },
+      "CambioClaveRequest": {
+        "type": "object",
+        "properties": {
+          "actual": {
+            "type": "string",
+            "minLength": 1
+          },
+          "nueva": {
+            "type": "string",
+            "maxLength": 72,
+            "minLength": 8
+          }
+        },
+        "required": [
+          "actual",
+          "nueva"
+        ]
+      },
+      "SeguimientoResponse": {
+        "type": "object",
+        "properties": {
+          "alertaId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "estado": {
+            "type": "string",
+            "description": "Estado simplificado para la pantalla del ciudadano",
+            "enum": [
+              "ASIGNANDO_UNIDAD",
+              "UNIDAD_ASIGNADA",
+              "UNIDAD_EN_CAMINO",
+              "UNIDAD_LLEGO",
+              "ATENCION_EN_PROCESO",
+              "ALERTA_ATENDIDA",
+              "CANCELADA"
+            ]
+          },
+          "unidadCodigo": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Código de la unidad que atiende (solo tras aceptar)",
+            "example": "SV-001"
+          },
+          "unidadLatitud": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double",
+            "description": "Latitud actual de la unidad (solo tras aceptar)"
+          },
+          "unidadLongitud": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double",
+            "description": "Longitud actual de la unidad (solo tras aceptar)"
+          },
+          "ubicacionEn": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "description": "Hora de la última posición de la unidad"
+          },
+          "distanciaM": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "description": "Distancia en línea recta de la unidad al incidente, en metros",
+            "example": 1200
+          },
+          "etaSegundos": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "description": "Tiempo estimado de llegada en segundos (distancia / velocidad promedio)",
+            "example": 260
+          }
+        },
+        "required": [
+          "alertaId",
+          "estado"
+        ]
+      },
+      "ErrorApi": {
+        "type": "object",
+        "description": "Error de la API. 'campos' solo aparece en errores de validacion (HTTP 400).",
+        "properties": {
+          "codigo": {
+            "type": "string",
+            "description": "Codigo estable para que la app decida qué mostrar",
+            "example": "FUERA_DE_COBERTURA"
+          },
+          "mensaje": {
+            "type": "string",
+            "description": "Texto listo para mostrar al usuario"
+          },
+          "campos": {
+            "type": "object",
+            "additionalProperties": true,
+            "description": "Objeto { nombreDelCampo: mensaje } (solo en HTTP 400). Ej.: { \"dni\": \"El DNI debe tener 8 digitos\" }"
+          }
+        }
+      }
+    },
+    "securitySchemes": {
+      "jwt": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    }
+  }
+}

@@ -1,0 +1,2 @@
+﻿id;tipo;estado;truncada;t_asignacion_s;t_aceptacion_s;t_llegada_s;t_atencion_s;reasignaciones;escalada;manual
+178;ROBO;FINALIZADA;false;2,4;3,6;35,2;44,2;0;false;false

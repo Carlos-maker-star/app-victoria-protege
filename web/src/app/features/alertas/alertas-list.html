@@ -1,0 +1,94 @@
+<div class="flex flex-col gap-6">
+  <div class="flex flex-wrap items-end justify-between gap-4">
+    <div class="flex flex-col gap-1.5">
+      <h1 class="m-0 text-[28px] font-semibold tracking-tight">Alertas</h1>
+      <p class="m-0 text-sm text-muted">{{ filtradas().length }} de {{ alertas().length }} alertas</p>
+    </div>
+  </div>
+
+  <div class="campo-denso flex flex-wrap items-center gap-3 rounded-xl border border-line bg-surface p-3">
+    <mat-form-field class="min-w-[260px] flex-1">
+      <mat-icon matPrefix class="icono-sm ml-3 text-subtle">search</mat-icon>
+      <input matInput [formControl]="busqueda" type="search" aria-label="Buscar" placeholder="Buscar por código, referencia, ciudadano o unidad" />
+    </mat-form-field>
+    <mat-form-field class="w-52">
+      <mat-label>Estado</mat-label>
+      <mat-select [value]="estado()" (valueChange)="estado.set($event)">
+        <mat-option [value]="null">Todos</mat-option>
+        <mat-option value="ACTIVAS">Solo activas</mat-option>
+        @for (e of estados; track e.clave) {
+          <mat-option [value]="e.clave">{{ e.etiqueta }}</mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+    <mat-form-field class="w-52">
+      <mat-label>Tipo</mat-label>
+      <mat-select [value]="tipo()" (valueChange)="tipo.set($event)">
+        <mat-option [value]="null">Todos</mat-option>
+        @for (t of tipos; track t.clave) {
+          <mat-option [value]="t.clave">{{ t.nombre }}</mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+    @if (hayFiltros()) {
+      <button matButton type="button" (click)="limpiar()"><mat-icon>filter_alt_off</mat-icon>Limpiar</button>
+    }
+  </div>
+
+  <section class="overflow-hidden rounded-xl border border-line bg-surface">
+    <div class="h-1">@if (cargando()) { <mat-progress-bar mode="indeterminate" /> }</div>
+    <div class="overflow-x-auto">
+      <table class="w-full min-w-[980px] border-collapse text-left">
+        <thead>
+          <tr class="border-b border-line bg-surface-2 text-xs font-semibold uppercase tracking-wide text-subtle">
+            <th class="h-11 w-36 px-6 font-semibold">Código</th>
+            <th class="px-4 font-semibold">Tipo</th>
+            <th class="w-32 px-4 font-semibold">Creada</th>
+            <th class="px-4 font-semibold">Ubicación</th>
+            <th class="w-44 px-4 font-semibold">Estado</th>
+            <th class="w-28 px-4 font-semibold">Prioridad</th>
+            <th class="w-40 px-4 font-semibold">Unidad</th>
+            <th class="w-44 px-4 font-semibold">Ciudadano</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (a of filtradas(); track a.id) {
+            <tr class="h-14 border-b border-line last:border-b-0 hover:bg-surface-2">
+              <td class="px-6">
+                <a [routerLink]="['/alertas', a.id]" class="font-mono text-[13px] whitespace-nowrap text-primary no-underline hover:underline">{{ codigo(a.id) }}</a>
+              </td>
+              <td class="px-4">
+                <span class="flex items-center gap-2.5">
+                  <span class="flex size-[30px] shrink-0 items-center justify-center rounded-lg bg-surface-2 text-muted">
+                    <mat-icon class="icono-sm" aria-hidden="true">{{ icono(a) }}</mat-icon>
+                  </span>
+                  <span class="text-sm font-medium">{{ nombreTipo(a) }}</span>
+                </span>
+              </td>
+              <td class="px-4 text-sm">
+                {{ a.creadaEn | date: 'HH:mm' }}<br /><span class="text-xs text-subtle">{{ a.creadaEn | date: 'd MMM' }}</span>
+              </td>
+              <td class="max-w-0 px-4"><span class="block truncate text-sm">{{ a.referencia ?? '—' }}</span></td>
+              <td class="px-4"><app-estado-alerta [estado]="a.estado" /></td>
+              <td class="px-4"><app-prioridad [prioridad]="a.prioridad" /></td>
+              <td class="px-4 text-sm">
+                @if (a.unidadCodigo) { <b class="font-medium">{{ a.unidadCodigo }}</b> } @else { <span class="text-subtle">Sin asignar</span> }
+              </td>
+              <td class="max-w-0 px-4"><span class="block truncate text-sm">{{ a.ciudadano }}</span></td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="8" class="px-6 py-14 text-center text-muted">
+                <div class="flex flex-col items-center gap-2">
+                  <mat-icon class="text-subtle">notifications_off</mat-icon>
+                  <b class="text-ink">{{ hayFiltros() ? 'Ninguna alerta coincide con los filtros' : 'Todavía no hay alertas' }}</b>
+                  <span class="text-sm">{{ hayFiltros() ? 'Prueba con otros filtros o límpialos.' : 'Cuando un vecino reporte una alerta aparecerá aquí.' }}</span>
+                </div>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </section>
+</div>

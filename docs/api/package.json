@@ -1,0 +1,17 @@
+{
+  "name": "contrato-api",
+  "private": true,
+  "type": "module",
+  "description": "Herramientas del contrato OpenAPI de La Victoria Protege",
+  "scripts": {
+    "exportar": "node exportar-openapi.mjs",
+    "contrato": "node probar-contrato.mjs",
+    "sectores": "node probar-sectores.mjs",
+    "seguridad": "node probar-seguridad.mjs",
+    "lint": "npx -y @redocly/cli@latest lint openapi-movil.json openapi-web.json"
+  },
+  "devDependencies": {
+    "ajv": "^8.17.1",
+    "ajv-formats": "^3.0.1"
+  }
+}

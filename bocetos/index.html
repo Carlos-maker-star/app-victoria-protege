@@ -1,0 +1,678 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bocetos · La Victoria Protege</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,400,0,0&display=block">
+<style>
+.t-claro {
+  --bg:#F5F6F8; --surface:#FFFFFF; --surface-2:#F9FAFB; --border:#E4E7EC; --text:#101828; --muted:#475467; --subtle:#667085; --track:#F2F4F7;
+  /* Primario (Azul institucional) */
+  --primary:#1D4ED8; --primary-soft:#EFF6FF; --on-primary:#FFFFFF; --nav-active:#EFF6FF; --nav-active-text:#1E40AF; --brand-panel:#1E3A8A;
+  --nuevo-bg:#E0F2FE; --nuevo-fg:#075985; --curso-bg:#FEF3C7; --curso-fg:#92400E; --espera-bg:#EDE9FE; --espera-fg:#5B21B6;
+  --exito-bg:#DCFCE7; --exito-fg:#166534; --neutro-bg:#EAECF0; --neutro-fg:#344054; --peligro-bg:#FEE2E2; --peligro-fg:#991B1B;
+  --atencion-bg:#DBEAFE; --atencion-fg:#1E40AF;
+  --bajo:#98A2B3; --medio:#3B82F6; --alto:#EA580C; --critico:#DC2626;
+  --interno-bg:#FFFBEB; --interno-border:#FCD34D; --interno-fg:#92400E;
+  /* Unidades (según el prompt: verde / naranja / rojo / gris) */
+  --u-disp:#16A34A; --u-ruta:#EA580C; --u-aten:#DC2626; --u-fuera:#475467;
+  /* Mapa */
+  --map-bg:#E8EDF3; --map-land:#F8FAFC; --map-street:#E2E8F0; --map-avenue:#CBD5E1; --map-line:#1D4ED8; --map-zone:#94A3B8;
+}
+.t-oscuro {
+  --bg:#0B0F17; --surface:#121926; --surface-2:#0E1420; --border:#223044; --text:#E6EAF2; --muted:#A3AEC2; --subtle:#8592A8; --track:#1B2433;
+  --primary:#60A5FA; --primary-soft:rgba(96,165,250,.14); --on-primary:#0B0F17; --nav-active:rgba(96,165,250,.14); --nav-active-text:#BFDBFE; --brand-panel:#0F1D45;
+  --nuevo-bg:rgba(14,165,233,.18); --nuevo-fg:#7DD3FC; --curso-bg:rgba(245,158,11,.18); --curso-fg:#FCD34D; --espera-bg:rgba(139,92,246,.22); --espera-fg:#C4B5FD;
+  --exito-bg:rgba(34,197,94,.18); --exito-fg:#86EFAC; --neutro-bg:rgba(152,162,179,.16); --neutro-fg:#D0D5DD; --peligro-bg:rgba(239,68,68,.18); --peligro-fg:#FCA5A5;
+  --atencion-bg:rgba(96,165,250,.18); --atencion-fg:#BFDBFE;
+  --bajo:#667085; --medio:#60A5FA; --alto:#FB923C; --critico:#F87171;
+  --interno-bg:rgba(245,158,11,.08); --interno-border:rgba(245,158,11,.4); --interno-fg:#FCD34D;
+  --u-disp:#4ADE80; --u-ruta:#FB923C; --u-aten:#F87171; --u-fuera:#8592A8;
+  --map-bg:#0A0E16; --map-land:#141C2B; --map-street:#1B2538; --map-avenue:#2A3850; --map-line:#60A5FA; --map-zone:#52627C;
+}
+* { box-sizing: border-box; }
+html { min-height: 100%; } body { min-height: 100vh; margin: 0; font-family: 'Geist', system-ui, sans-serif; background: var(--bg); color: var(--text); font-size: 14px; }
+a { color: var(--primary); text-decoration: none; } a:hover { text-decoration: underline; }
+.icono { font-family: 'Material Symbols Rounded'; font-size: 18px; line-height: 1; font-weight: normal; font-style: normal; letter-spacing: normal; text-transform: none; white-space: nowrap; direction: ltr; -webkit-font-smoothing: antialiased; }
+.mono { font-family: 'Geist Mono', monospace; font-size: 13px; color: var(--subtle); white-space: nowrap; }
+
+.pestanas { position: sticky; top: 0; z-index: 30; display: flex; gap: 4px; align-items: center; padding: 8px 16px; background: #0B0F17; color: #fff; font-size: 13px; overflow-x: auto; }
+.pestanas button { border: 0; background: transparent; color: #CBD2E0; padding: 6px 12px; border-radius: 6px; font: inherit; cursor: pointer; white-space: nowrap; }
+.pestanas button[aria-selected="true"] { background: #fff; color: #0B0F17; font-weight: 600; }
+.pestanas .espacio { flex: 1; }
+section[data-pantalla] { display: none; } section[data-pantalla].activa { display: block; }
+
+.app { display: flex; min-height: calc(100vh - 44px); }
+.sidebar { width: 248px; flex-shrink: 0; display: flex; flex-direction: column; gap: 22px; padding: 20px 16px; background: var(--surface); border-right: 1px solid var(--border); }
+.marca { display: flex; align-items: center; gap: 12px; padding: 4px 8px; }
+.marca .logo { width: 36px; height: 36px; border-radius: 10px; display: grid; place-items: center; background: var(--primary); color: var(--on-primary); }
+.marca b { display: block; font-size: 15px; line-height: 1.15; } .marca small { color: var(--subtle); font-size: 11px; }
+.nav { display: flex; flex-direction: column; gap: 2px; }
+.nav .titulo { padding: 0 12px 6px; font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--subtle); }
+.nav a { display: flex; align-items: center; gap: 12px; height: 38px; padding: 0 12px; border-radius: 8px; font-weight: 500; color: var(--muted); }
+.nav a:hover { text-decoration: none; background: var(--surface-2); }
+.nav a.activo { background: var(--nav-active); color: var(--nav-active-text); }
+.nav a .contador { margin-left: auto; background: var(--critico); color: #fff; font-size: 11px; font-weight: 600; padding: 1px 7px; border-radius: 999px; }
+.usuario { margin-top: auto; display: flex; align-items: center; gap: 12px; padding: 12px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface-2); }
+.principal { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.topbar { height: 64px; display: flex; align-items: center; gap: 12px; padding: 0 28px; background: var(--surface); border-bottom: 1px solid var(--border); }
+.topbar .titulo { flex: 1; font-weight: 600; }
+.buscador { display: flex; align-items: center; gap: 8px; width: 300px; height: 40px; padding: 0 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface-2); color: var(--subtle); }
+.contenido { padding: 24px 28px 32px; display: flex; flex-direction: column; gap: 20px; width: 100%; }
+.en-vivo { display: inline-flex; align-items: center; gap: 8px; height: 32px; padding: 0 12px; border-radius: 999px; background: var(--exito-bg); color: var(--exito-fg); font-size: 12px; font-weight: 600; }
+.en-vivo::before { content: ''; width: 8px; height: 8px; border-radius: 999px; background: currentColor; animation: pulso 1.6s infinite; }
+@keyframes pulso { 0%,100% { opacity: 1 } 50% { opacity: .35 } }
+
+h1 { margin: 0; font-size: 28px; font-weight: 600; letter-spacing: -.02em; }
+.sub { margin: 4px 0 0; color: var(--muted); }
+.encabezado { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; }
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; }
+.card h2 { margin: 0; font-size: 16px; font-weight: 600; }
+.card-cab { display: flex; justify-content: space-between; align-items: center; padding: 14px 20px; border-bottom: 1px solid var(--border); }
+.btn { display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 16px; border-radius: 8px; font: inherit; font-weight: 600; cursor: pointer; }
+.btn.chico { height: 32px; padding: 0 12px; font-size: 13px; }
+.btn.primario { border: 0; background: var(--primary); color: var(--on-primary); }
+.btn.secundario { border: 1px solid var(--border); background: var(--surface); color: var(--text); }
+.btn.texto { border: 0; background: transparent; color: var(--primary); }
+.btn.peligro { border: 1px solid var(--critico); background: transparent; color: var(--critico); }
+.btn-icono { width: 40px; height: 40px; display: grid; place-items: center; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--muted); cursor: pointer; position: relative; }
+.btn-icono .punto-notif { position: absolute; top: 7px; right: 8px; width: 9px; height: 9px; border-radius: 99px; background: var(--critico); border: 2px solid var(--surface); }
+.badge { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: 999px; font-size: 12px; font-weight: 600; white-space: nowrap; }
+.badge.nuevo { background: var(--nuevo-bg); color: var(--nuevo-fg); } .badge.curso { background: var(--curso-bg); color: var(--curso-fg); }
+.badge.espera { background: var(--espera-bg); color: var(--espera-fg); } .badge.exito { background: var(--exito-bg); color: var(--exito-fg); }
+.badge.neutro { background: var(--neutro-bg); color: var(--neutro-fg); } .badge.peligro { background: var(--peligro-bg); color: var(--peligro-fg); }
+.badge.atencion { background: var(--atencion-bg); color: var(--atencion-fg); }
+.nivel { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 500; }
+.nivel::before { content: ''; width: 8px; height: 8px; border-radius: 999px; background: var(--c); }
+.avatar { width: 26px; height: 26px; border-radius: 999px; display: inline-grid; place-items: center; color: #fff; font-size: 10px; font-weight: 600; flex-shrink: 0; }
+.udot { display: inline-block; width: 10px; height: 10px; border-radius: 3px; background: var(--c); }
+
+.kpis8 { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 12px; }
+.kpi { padding: 14px 16px; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.kpi .fila { display: flex; justify-content: space-between; align-items: center; color: var(--muted); font-size: 12px; font-weight: 500; gap: 6px; }
+.kpi .fila span:first-child { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.kpi .ico { width: 28px; height: 28px; border-radius: 8px; display: grid; place-items: center; flex-shrink: 0; }
+.kpi .valor { font-size: 28px; font-weight: 600; letter-spacing: -.02em; line-height: 1; }
+.kpi .valor small { font-size: 14px; font-weight: 500; color: var(--subtle); }
+.kpi .detalle { font-size: 12px; color: var(--subtle); }
+.barras { padding: 18px 22px; display: flex; flex-direction: column; gap: 14px; }
+.barra { display: grid; grid-template-columns: 150px minmax(0,1fr) 40px; align-items: center; gap: 12px; }
+.barra .pista { height: 10px; border-radius: 999px; background: var(--track); overflow: hidden; }
+.barra .pista span { display: block; height: 100%; border-radius: 999px; }
+table { width: 100%; border-collapse: collapse; text-align: left; }
+thead tr { background: var(--surface-2); border-bottom: 1px solid var(--border); font-size: 12px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: var(--subtle); }
+th { height: 44px; padding: 0 14px; font-weight: 600; white-space: nowrap; } th:first-child, td:first-child { padding-left: 22px; }
+tbody tr { height: 58px; border-bottom: 1px solid var(--border); } tbody tr:last-child { border-bottom: 0; }
+tbody tr:hover { background: var(--surface-2); }
+td { padding: 0 14px; }
+.filtros { display: flex; gap: 12px; padding: 12px; align-items: center; flex-wrap: wrap; }
+.campo { height: 40px; display: flex; align-items: center; gap: 8px; padding: 0 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--muted); min-width: 140px; justify-content: space-between; }
+.chip { height: 32px; display: inline-flex; align-items: center; gap: 6px; padding: 0 12px; border: 1px solid var(--border); border-radius: 999px; background: var(--surface); color: var(--muted); font-size: 13px; font-weight: 500; cursor: pointer; }
+.chip.on { background: var(--primary); border-color: var(--primary); color: var(--on-primary); }
+.timeline { list-style: none; margin: 0; padding: 16px 20px 6px; }
+.timeline li { display: grid; grid-template-columns: 20px 1fr; column-gap: 12px; }
+.timeline .punto { display: flex; flex-direction: column; align-items: center; }
+.timeline .punto::before { content: ''; width: 10px; height: 10px; margin-top: 5px; border-radius: 999px; background: var(--c, var(--primary)); }
+.timeline .punto::after { content: ''; width: 2px; flex: 1; min-height: 18px; background: var(--border); }
+.timeline li:last-child .punto::after { display: none; }
+.timeline .texto { padding-bottom: 14px; display: flex; flex-direction: column; gap: 2px; }
+.timeline small { color: var(--subtle); }
+.lista-det { padding: 6px 20px 14px; display: flex; flex-direction: column; }
+.lista-det div { display: flex; justify-content: space-between; gap: 12px; padding: 9px 0; border-bottom: 1px dashed var(--border); }
+.lista-det div:last-child { border-bottom: 0; }
+.lista-det dt { color: var(--subtle); } .lista-det dd { margin: 0; font-weight: 500; text-align: right; }
+
+/* Login */
+.login { display: flex; min-height: calc(100vh - 44px); }
+.login .marca-panel { width: 600px; padding: 56px 64px; background: var(--brand-panel); color: #fff; display: flex; flex-direction: column; justify-content: space-between; }
+.login .formulario { flex: 1; display: grid; place-items: center; }
+.input { height: 44px; width: 100%; padding: 0 14px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text); font: inherit; }
+.paso { display: flex; gap: 16px; align-items: flex-start; margin-bottom: 22px; }
+.paso .n { width: 34px; height: 34px; border-radius: 999px; background: rgba(255,255,255,.14); display: grid; place-items: center; font-weight: 600; flex-shrink: 0; }
+
+/* Mapa */
+.mapa-wrap { position: relative; border-radius: 12px; overflow: hidden; border: 1px solid var(--border); background: var(--map-bg); }
+.mapa-wrap svg.mapa { display: block; width: 100%; height: 100%; }
+.mapa-ctrl { position: absolute; display: flex; flex-direction: column; gap: 6px; }
+.mapa-leyenda { position: absolute; right: 64px; bottom: 14px; padding: 12px 14px; display: grid; grid-template-columns: auto auto; gap: 6px 22px; font-size: 12px; color: var(--muted); }
+.mapa-leyenda b { grid-column: 1 / -1; color: var(--text); font-size: 12px; }
+.mapa-leyenda span { display: flex; align-items: center; gap: 8px; }
+.popup { position: absolute; width: 300px; padding: 14px 16px; box-shadow: 0 8px 24px rgba(16,24,40,.18); }
+.toast { position: absolute; right: 14px; top: 14px; width: 330px; padding: 12px 14px; display: flex; gap: 12px; align-items: flex-start; box-shadow: 0 8px 24px rgba(16,24,40,.16); border-left: 4px solid var(--critico); }
+.item-alerta { padding: 14px 18px; border-bottom: 1px solid var(--border); display: flex; flex-direction: column; gap: 8px; cursor: pointer; }
+.item-alerta.sel { background: var(--primary-soft); box-shadow: inset 3px 0 0 var(--primary); }
+.item-alerta .fila { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.tipo-ico { width: 30px; height: 30px; border-radius: 8px; display: grid; place-items: center; flex-shrink: 0; }
+.cuenta { font-family: 'Geist Mono', monospace; font-weight: 600; }
+.evid { aspect-ratio: 4/3; border-radius: 10px; border: 1px solid var(--border); background: var(--track); display: grid; place-items: center; color: var(--subtle); position: relative; }
+.evid small { position: absolute; left: 8px; bottom: 6px; }
+/* Modales */
+.modal-fondo { position: fixed; inset: 0; z-index: 60; display: none; place-items: center; padding: 24px; background: rgba(16,24,40,.55); }
+.modal-fondo.abierto { display: grid; }
+.modal { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; width: min(560px, 100%); max-height: calc(100vh - 48px); overflow: auto; box-shadow: 0 24px 64px rgba(16,24,40,.3); color: var(--text); }
+.modal-cab { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; padding: 22px 24px 14px; }
+.modal-cab h3 { margin: 0; font-size: 18px; font-weight: 600; letter-spacing: -.01em; }
+.modal-cab p { margin: 4px 0 0; color: var(--muted); font-size: 13px; }
+.modal-cuerpo { padding: 4px 24px 22px; display: flex; flex-direction: column; gap: 16px; }
+.modal-pie { display: flex; justify-content: flex-end; gap: 8px; padding: 14px 24px; border-top: 1px solid var(--border); background: var(--surface-2); border-radius: 0 0 16px 16px; }
+.etiqueta { display: block; font-size: 13px; font-weight: 500; margin-bottom: 6px; }
+.etiqueta i { color: var(--critico); font-style: normal; }
+.ayuda { font-size: 12px; color: var(--subtle); margin-top: 6px; }
+.input.area { height: 84px; padding: 10px 14px; resize: none; }
+.dos { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.opcion { display: flex; align-items: center; gap: 12px; padding: 11px 14px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); }
+.opcion.sel { border-color: var(--primary); background: var(--primary-soft); box-shadow: inset 0 0 0 1px var(--primary); }
+.opcion.off { opacity: .5; }
+.opcion .radio { width: 18px; height: 18px; border-radius: 99px; border: 2px solid var(--border); flex-shrink: 0; }
+.opcion.sel .radio { border: 5px solid var(--primary); }
+.opcion .grow { flex: 1; min-width: 0; }
+.aviso { display: flex; gap: 12px; align-items: flex-start; padding: 12px 14px; border-radius: 10px; font-size: 13px; }
+.aviso.peligro { background: var(--peligro-bg); color: var(--peligro-fg); } .aviso.exito { background: var(--exito-bg); color: var(--exito-fg); } .aviso.info { background: var(--nuevo-bg); color: var(--nuevo-fg); } .aviso.curso { background: var(--curso-bg); color: var(--curso-fg); }
+.toggle { width: 40px; height: 22px; border-radius: 99px; background: var(--track); border: 1px solid var(--border); position: relative; flex-shrink: 0; }
+.toggle::after { content: ''; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 99px; background: #fff; box-shadow: 0 1px 2px rgba(0,0,0,.3); }
+.toggle.on { background: var(--primary); border-color: var(--primary); } .toggle.on::after { left: 20px; }
+.fila-toggle { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.cuadricula { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.cuadricula .opcion { flex-direction: column; justify-content: center; padding: 12px 6px; gap: 6px; text-align: center; font-size: 12px; font-weight: 500; }
+.btn.peligro-lleno { border: 0; background: var(--critico); color: #fff; }
+.galeria { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; align-items: start; }
+.galeria figure { margin: 0; display: flex; flex-direction: column; gap: 10px; }
+.galeria .vista { border-radius: 16px; padding: 26px; background: rgba(16,24,40,.5); display: grid; place-items: center; }
+.galeria .vista .modal { width: 100%; max-height: none; }
+.galeria figcaption { display: flex; align-items: center; justify-content: space-between; gap: 12px; color: var(--muted); }
+.galeria figcaption b { color: var(--text); }
+.vbars { display: flex; align-items: flex-end; gap: 8px; height: 150px; padding: 0 6px; }
+.vbars div { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 6px; height: 100%; font-size: 11px; color: var(--subtle); }
+.vbars i { display: block; width: 100%; border-radius: 6px 6px 0 0; background: var(--primary); opacity: .85; }
+</style>
+</head>
+<body class="t-claro">
+<nav class="pestanas" role="tablist" aria-label="Pantallas">
+  <button role="tab" data-ir="login">Login</button>
+  <button role="tab" data-ir="monitoreo" aria-selected="true">Centro de monitoreo</button>
+  <button role="tab" data-ir="alertas">Alertas</button>
+  <button role="tab" data-ir="detalle">Detalle de alerta</button>
+  <button role="tab" data-ir="unidades">Unidades</button>
+  <button role="tab" data-ir="reportes">Reportes</button>
+  <button role="tab" data-ir="modales">Modales</button>
+  <button role="tab" data-ir="sistema">Sistema visual</button>
+  <span class="espacio"></span>
+  <button type="button" id="tema">Modo oscuro</button>
+</nav>
+
+<!-- LOGIN -->
+<section data-pantalla="login">
+  <div class="login">
+    <div class="marca-panel">
+      <div class="marca"><span class="logo" style="background:#fff;color:var(--brand-panel)"><span class="icono">shield</span></span><div><b>LA VICTORIA PROTEGE</b><small style="color:#fff;opacity:.7">Municipalidad Distrital de La Victoria</small></div></div>
+      <div>
+        <h2 style="font-size:40px;line-height:1.15;margin:0 0 14px;font-weight:600">Reportar es fácil.<br>Responder es rápido.<br>La atención es trazable.</h2>
+        <p style="opacity:.8;margin:0 0 40px;font-size:16px">Central de monitoreo de seguridad ciudadana.</p>
+        <div class="paso"><span class="n">1</span><div><b>El vecino reporta</b><br><span style="opacity:.75">Con su ubicación exacta, desde el celular.</span></div></div>
+        <div class="paso"><span class="n">2</span><div><b>El sistema asigna</b><br><span style="opacity:.75">A la unidad disponible más cercana. Si no puede, reasigna.</span></div></div>
+        <div class="paso"><span class="n">3</span><div><b>Todo queda registrado</b><br><span style="opacity:.75">Tiempos, evidencias y resultado de cada intervención.</span></div></div>
+      </div>
+      <small style="opacity:.7">¿Problemas para entrar? Contacta al administrador del sistema.</small>
+    </div>
+    <div class="formulario">
+      <form style="width:400px;display:flex;flex-direction:column;gap:20px" onsubmit="return false">
+        <div><h1>Inicia sesión</h1><p class="sub">Acceso para personal de central, supervisión y administración.</p></div>
+        <label>DNI o correo institucional<br><input class="input" placeholder="00000000" style="margin-top:6px"></label>
+        <label>Contraseña<br>
+          <span style="position:relative;display:block;margin-top:6px">
+            <input class="input" type="password" id="clave" value="clavesegura" style="padding-right:48px">
+            <button type="button" class="btn-icono" aria-label="Mostrar contraseña" aria-pressed="false" style="position:absolute;right:2px;top:2px;border:0;background:transparent"
+              onclick="const i=document.getElementById('clave'),v=i.type==='password';i.type=v?'text':'password';this.setAttribute('aria-pressed',v);this.setAttribute('aria-label',v?'Ocultar contraseña':'Mostrar contraseña');this.firstElementChild.textContent=v?'visibility_off':'visibility'"><span class="icono">visibility</span></button>
+          </span></label>
+        <button class="btn primario" style="justify-content:center">Ingresar</button>
+      </form>
+    </div>
+  </div>
+</section>
+
+<template id="layout">
+  <div class="app">
+    <aside class="sidebar">
+      <div class="marca"><span class="logo"><span class="icono">shield</span></span><div><b>LA VICTORIA<br>PROTEGE</b><small>Central de monitoreo</small></div></div>
+      <nav class="nav"><span class="titulo">Operación</span>
+        <a href="#" data-nav="monitoreo"><span class="icono">map</span>Monitoreo</a>
+        <a href="#" data-nav="alertas"><span class="icono">notifications_active</span>Alertas<span class="contador">5</span></a>
+        <a href="#"><span class="icono">swap_horiz</span>Reasignaciones</a>
+        <a href="#" data-nav="unidades"><span class="icono">local_police</span>Unidades</a>
+      </nav>
+      <nav class="nav"><span class="titulo">Supervisión</span>
+        <a href="#" data-nav="reportes"><span class="icono">monitoring</span>Reportes</a>
+        <a href="#"><span class="icono">badge</span>Serenos</a>
+      </nav>
+      <nav class="nav"><span class="titulo">Administración</span>
+        <a href="#"><span class="icono">category</span>Tipos de alerta</a>
+        <a href="#"><span class="icono">hexagon</span>Zonas</a>
+        <a href="#"><span class="icono">group</span>Usuarios y roles</a>
+        <a href="#"><span class="icono">history</span>Auditoría</a>
+        <a href="#"><span class="icono">settings</span>Configuración</a>
+      </nav>
+      <div class="usuario"><span class="avatar" style="background:#1D4ED8;width:36px;height:36px;font-size:12px">MC</span><div style="flex:1"><b>María Campos</b><br><small style="color:var(--subtle)">Operadora de central</small></div><span class="icono" style="color:var(--muted)">logout</span></div>
+    </aside>
+    <div class="principal">
+      <header class="topbar"><span class="titulo" data-titulo></span>
+        <span class="en-vivo">En vivo</span>
+        <div class="buscador"><span class="icono">search</span>Buscar alerta, unidad o sereno…</div>
+        <button class="btn-icono" type="button" aria-label="Notificaciones"><span class="icono">notifications</span><span class="punto-notif"></span></button>
+        <button class="btn-icono" type="button" aria-label="Cambiar tema" onclick="alternarTema()"><span class="icono">dark_mode</span></button>
+      </header>
+      <main class="contenido" data-slot></main>
+    </div>
+  </div>
+</template>
+
+<!-- MONITOREO -->
+<section data-pantalla="monitoreo" data-titulo="Centro de monitoreo" class="activa">
+  <div class="kpis8" id="kpis"></div>
+  <div style="display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:16px;align-items:stretch">
+    <div class="mapa-wrap" style="height:640px" id="mapa-grande">
+      <div class="mapa-ctrl" style="left:14px;top:14px;flex-direction:row;flex-wrap:wrap;max-width:520px">
+        <span class="chip on">Todas</span><span class="chip">Pendientes</span><span class="chip">En proceso</span><span class="chip">Reasignadas</span>
+        <span class="chip"><span class="icono" style="font-size:16px">hexagon</span>Zonas</span>
+      </div>
+      <div class="mapa-ctrl" style="right:14px;bottom:14px">
+        <button class="btn-icono" aria-label="Acercar"><span class="icono">add</span></button>
+        <button class="btn-icono" aria-label="Alejar"><span class="icono">remove</span></button>
+        <button class="btn-icono" aria-label="Centrar en el distrito"><span class="icono">my_location</span></button>
+      </div>
+      <div class="card toast" style="top:58px">
+        <span class="icono" style="color:var(--critico);margin-top:2px">warning</span>
+        <div><b>SV-003 no respondió</b><br><span style="color:var(--muted);font-size:13px">ALR-000153 se reasignó a SV-004 · hace 6 s</span></div>
+      </div>
+      <div class="card popup" style="left:14px;top:58px">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
+          <div><span class="mono">ALR-000152</span><div style="font-weight:600;font-size:15px;margin-top:2px">Robo · Sector 3</div></div>
+          <span class="badge curso">En camino</span>
+        </div>
+        <dl class="lista-det" style="padding:8px 0 4px">
+          <div><dt>Ciudadano</dt><dd>Rosa Paredes</dd></div>
+          <div><dt>Unidad · sereno</dt><dd>SV-001 · J. Ramos</dd></div>
+          <div><dt>Llegada estimada</dt><dd>2 min 10 s</dd></div>
+          <div><dt>Transcurrido</dt><dd class="cuenta">01:34</dd></div>
+        </dl>
+        <div style="display:flex;gap:8px;margin-top:6px"><button class="btn primario chico" data-ir="detalle">Ver detalle</button><button class="btn secundario chico"><span class="icono" style="font-size:16px">call</span>Llamar</button></div>
+      </div>
+      <div class="card mapa-leyenda">
+        <b>Leyenda</b>
+        <span><i class="udot" style="--c:var(--u-disp)"></i>Disponible</span><span><i class="udot" style="--c:var(--u-ruta)"></i>En desplazamiento</span>
+        <span><i class="udot" style="--c:var(--u-aten)"></i>En atención</span><span><i class="udot" style="--c:var(--u-fuera)"></i>Fuera de servicio</span>
+      </div>
+    </div>
+    <div class="card" style="display:flex;flex-direction:column;overflow:hidden;height:640px">
+      <div class="card-cab"><h2>Alertas activas</h2><span class="badge neutro">5</span></div>
+      <div id="lista-alertas" style="overflow:auto;flex:1"></div>
+    </div>
+  </div>
+  <div class="card"><div class="card-cab"><h2>Actividad reciente</h2><a href="#">Ver auditoría</a></div>
+    <ol class="timeline" id="actividad" style="display:grid;grid-template-columns:1fr 1fr;column-gap:40px;padding-bottom:0"></ol>
+  </div>
+</section>
+
+<!-- ALERTAS -->
+<section data-pantalla="alertas" data-titulo="Alertas">
+  <div class="encabezado"><div><h1>Alertas</h1><p class="sub">Hoy · 29 alertas · 5 activas</p></div><div style="display:flex;gap:8px"><button class="btn secundario"><span class="icono">download</span>Exportar</button><button class="btn primario" data-modal="registrar"><span class="icono">add_alert</span>Registrar alerta</button></div></div>
+  <div class="card filtros">
+    <div class="campo" style="flex:1;min-width:240px;justify-content:flex-start"><span class="icono">search</span>Buscar por código, dirección o ciudadano</div>
+    <div class="campo">Todos los estados<span class="icono">expand_more</span></div>
+    <div class="campo">Todos los tipos<span class="icono">expand_more</span></div>
+    <div class="campo">Todas las zonas<span class="icono">expand_more</span></div>
+    <div class="campo">Hoy<span class="icono">calendar_today</span></div>
+    <span class="chip"><span class="icono" style="font-size:16px">swap_horiz</span>Solo reasignadas</span>
+  </div>
+  <div class="card" style="overflow:hidden"><table>
+    <thead><tr><th>Código</th><th>Tipo</th><th>Hora</th><th>Ubicación</th><th>Estado</th><th>Unidad · sereno</th><th>Asignación</th><th>Llegada</th><th>Resultado</th></tr></thead>
+    <tbody id="tabla-alertas"></tbody></table>
+    <div style="display:flex;justify-content:space-between;align-items:center;height:56px;padding:0 22px;border-top:1px solid var(--border);color:var(--muted);font-size:13px"><span>1–10 de 29</span><span>‹ 1 2 3 ›</span></div>
+  </div>
+</section>
+
+<!-- DETALLE -->
+<section data-pantalla="detalle" data-titulo="Detalle de alerta">
+  <div class="encabezado" style="align-items:flex-start">
+    <div><div style="display:flex;gap:10px;align-items:center"><span class="mono">ALR-000152</span><span class="badge exito">Finalizada</span><span class="nivel" style="--c:var(--critico)"><span class="icono" style="color:var(--critico);font-size:14px">warning</span>Prioridad crítica</span><span class="badge espera"><span class="icono" style="font-size:14px">swap_horiz</span>Reasignada 1 vez</span></div>
+      <h1 style="margin-top:10px;font-size:26px">Robo · Mz. C Lt. 12, Sector 3</h1><p class="sub">Reportada por <b style="color:var(--text)">Rosa Paredes</b> · hoy, 14:21:05</p></div>
+    <div style="display:flex;gap:8px"><button class="btn secundario"><span class="icono">print</span>Imprimir informe</button><button class="btn secundario"><span class="icono">forward_to_inbox</span>Contactar ciudadano</button></div>
+  </div>
+  <div style="display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:20px;align-items:start">
+    <div style="display:flex;flex-direction:column;gap:20px">
+      <div class="mapa-wrap" style="height:360px" id="mapa-detalle"></div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px">
+        <div class="card kpi"><div class="fila"><span>Asignación</span></div><span class="valor">0 <small>s</small></span><span class="detalle">Alerta → primera unidad</span></div>
+        <div class="card kpi"><div class="fila"><span>Aceptación</span></div><span class="valor">12 <small>s</small></span><span class="detalle">Incluye 1 reasignación</span></div>
+        <div class="card kpi"><div class="fila"><span>Llegada</span></div><span class="valor">4 <small>min</small> 37 <small>s</small></span><span class="detalle">Distancia 1.2 km</span></div>
+        <div class="card kpi"><div class="fila"><span>Atención</span></div><span class="valor">15 <small>min</small></span><span class="detalle">Resultado: Atendida</span></div>
+      </div>
+      <div class="card"><div class="card-cab"><h2>Evidencias</h2><span class="badge neutro">3</span></div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;padding:16px 20px">
+          <div class="evid"><span class="icono" style="font-size:34px">image</span><small>Foto · 14:26 · SV-001</small></div>
+          <div class="evid"><span class="icono" style="font-size:34px">image</span><small>Foto · 14:27 · SV-001</small></div>
+          <div class="evid"><span class="icono" style="font-size:34px">videocam</span><small>Video · 14:31 · SV-001</small></div>
+        </div>
+        <div style="padding:0 20px 18px"><div style="font-size:13px;color:var(--subtle);margin-bottom:4px">OBSERVACIÓN DEL SERENO</div>Se intervino a dos personas. La víctima recuperó sus pertenencias y no hubo heridos. Se derivó el caso a la comisaría del sector.</div>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:20px">
+      <div class="card"><div class="card-cab"><h2>Detalles</h2></div><dl class="lista-det">
+        <div><dt>Ciudadano</dt><dd>Rosa Paredes</dd></div><div><dt>DNI</dt><dd class="mono" style="color:var(--text)">71••••45</dd></div>
+        <div><dt>Teléfono</dt><dd>987 654 321</dd></div><div><dt>Zona</dt><dd>Sector 3</dd></div>
+        <div><dt>Referencia</dt><dd>Frente a la losa deportiva</dd></div><div><dt>Unidad final</dt><dd>SV-001 (CAM-204)</dd></div>
+        <div><dt>Sereno</dt><dd>José Ramos</dd></div><div><dt>Resultado</dt><dd><span class="badge exito">Atendida</span></dd></div></dl></div>
+      <div class="card"><div class="card-cab"><h2>Historial</h2><a href="#">Descargar</a></div>
+        <ol class="timeline" id="historial"></ol></div>
+    </div>
+  </div>
+</section>
+
+<!-- UNIDADES -->
+<section data-pantalla="unidades" data-titulo="Unidades">
+  <div class="encabezado"><div><h1>Unidades en tiempo real</h1><p class="sub">6 unidades · 2 disponibles · 2 en ruta · 1 en atención · 1 fuera de servicio</p></div><button class="btn primario" data-modal="unidad"><span class="icono">add</span>Nueva unidad</button></div>
+  <div class="card filtros">
+    <div class="campo" style="flex:1;min-width:240px;justify-content:flex-start"><span class="icono">search</span>Buscar por código, placa o sereno</div>
+    <span class="chip on">Todas</span><span class="chip"><i class="udot" style="--c:var(--u-disp)"></i>Disponibles</span><span class="chip"><i class="udot" style="--c:var(--u-ruta)"></i>En ruta</span><span class="chip"><i class="udot" style="--c:var(--u-aten)"></i>En atención</span><span class="chip"><i class="udot" style="--c:var(--u-fuera)"></i>Fuera de servicio</span>
+  </div>
+  <div class="card" style="overflow:hidden"><table>
+    <thead><tr><th>Unidad</th><th>Sereno</th><th>Estado</th><th>Alerta actual</th><th>Última posición</th><th>Velocidad</th><th>Zona</th><th>Alertas hoy</th><th></th></tr></thead>
+    <tbody id="tabla-unidades"></tbody></table></div>
+</section>
+
+<!-- REPORTES -->
+<section data-pantalla="reportes" data-titulo="Reportes">
+  <div class="encabezado"><div><h1>Reportes y estadísticas</h1><p class="sub">Últimos 7 días · todo el distrito</p></div><div style="display:flex;gap:8px"><div class="campo">Últimos 7 días<span class="icono">expand_more</span></div><button class="btn secundario"><span class="icono">download</span>Exportar PDF</button></div></div>
+  <div class="kpis8" style="grid-template-columns:repeat(4,1fr)">
+    <div class="card kpi"><div class="fila"><span>Alertas</span><span class="ico" style="background:var(--primary-soft);color:var(--primary)"><span class="icono">notifications_active</span></span></div><span class="valor">212</span><span class="detalle">+8 % vs. semana anterior</span></div>
+    <div class="card kpi"><div class="fila"><span>Tiempo de asignación</span><span class="ico" style="background:var(--nuevo-bg);color:var(--nuevo-fg)"><span class="icono">timer</span></span></div><span class="valor">9 <small>s</small></span><span class="detalle">Promedio</span></div>
+    <div class="card kpi"><div class="fila"><span>Tiempo de llegada</span><span class="ico" style="background:var(--curso-bg);color:var(--curso-fg)"><span class="icono">directions_car</span></span></div><span class="valor">5 <small>min</small> 12 <small>s</small></span><span class="detalle">Promedio</span></div>
+    <div class="card kpi"><div class="fila"><span>Reasignadas</span><span class="ico" style="background:var(--espera-bg);color:var(--espera-fg)"><span class="icono">swap_horiz</span></span></div><span class="valor">17 <small>(8 %)</small></span><span class="detalle">0 alertas sin atender</span></div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+    <div class="card"><div class="card-cab"><h2>Alertas por día</h2></div><div class="vbars" id="por-dia" style="padding:20px 22px 14px"></div></div>
+    <div class="card"><div class="card-cab"><h2>Alertas por hora</h2></div><div class="vbars" id="por-hora" style="padding:20px 22px 14px;gap:3px"></div></div>
+    <div class="card"><div class="card-cab"><h2>Alertas por tipo</h2></div><div class="barras" id="por-tipo"></div></div>
+    <div class="card"><div class="card-cab"><h2>Motivos de reasignación</h2></div><div class="barras" id="por-motivo"></div></div>
+  </div>
+</section>
+
+<!-- MODALES -->
+<section data-pantalla="modales" data-titulo="Modales">
+  <div class="encabezado"><div><h1>Modales</h1><p class="sub">Los seis diálogos de la central. Pulsa «Abrir» para verlos como ventana real; se cierran con Esc, con la X o al pulsar fuera.</p></div></div>
+  <div class="galeria" id="galeria"></div>
+</section>
+
+<!-- SISTEMA VISUAL -->
+<section data-pantalla="sistema" data-titulo="Sistema visual">
+  <div class="encabezado"><div><h1>Sistema visual</h1><p class="sub">Azul institucional · Geist / Geist Mono · Angular Material + Tailwind</p></div></div>
+  <div class="card" style="padding:24px;display:flex;flex-direction:column;gap:22px">
+    <div><h2>Estados de la alerta</h2><p style="display:flex;gap:8px;flex-wrap:wrap"><span class="badge nuevo">Buscando unidad</span><span class="badge espera">Esperando respuesta</span><span class="badge curso">En camino</span><span class="badge atencion">En atención</span><span class="badge exito">Finalizada</span><span class="badge neutro">Cancelada</span><span class="badge peligro">Sin unidad (escalada)</span></p></div>
+    <div><h2>Prioridad (según el tipo de alerta)</h2><p style="display:flex;gap:18px"><span class="nivel" style="--c:var(--bajo)">Baja · Otro</span><span class="nivel" style="--c:var(--medio)">Media · Sospechosa</span><span class="nivel" style="--c:var(--alto)">Alta · Accidente, disturbios</span><span class="nivel" style="--c:var(--critico)"><span class="icono" style="color:var(--critico);font-size:14px">warning</span>Crítica · Robo, incendio, emergencia</span></p></div>
+    <div><h2>Estados de la unidad (igual que en la app del sereno)</h2><p style="display:flex;gap:22px"><span class="nivel" style="--c:var(--u-disp)">Disponible</span><span class="nivel" style="--c:var(--u-ruta)">En desplazamiento</span><span class="nivel" style="--c:var(--u-aten)">En atención</span><span class="nivel" style="--c:var(--u-fuera)">Fuera de servicio</span></p></div>
+    <div><h2>Botones</h2><p style="display:flex;gap:10px"><button class="btn primario">Primario</button><button class="btn secundario">Secundario</button><button class="btn texto">Texto</button><button class="btn peligro">Peligro</button></p></div>
+    <div><h2>Colores base</h2><p style="display:flex;gap:10px;flex-wrap:wrap"><span class="badge" style="background:var(--primary);color:var(--on-primary)">Primario</span><span class="badge" style="background:var(--brand-panel);color:#fff">Panel de marca</span><span class="badge" style="background:var(--surface-2);border:1px solid var(--border);color:var(--text)">Superficie</span><span class="badge" style="background:var(--track);color:var(--muted)">Pista</span></p></div>
+  </div>
+</section>
+
+<div class="modal-fondo" id="fondo-modal" role="dialog" aria-modal="true"></div>
+
+<script>
+/* ---------- datos de ejemplo ---------- */
+const POLY = [[-79.91138,-6.85031],[-79.91122,-6.85041],[-79.91089,-6.85066],[-79.9107,-6.85077],[-79.90918,-6.85149],[-79.9085,-6.85183],[-79.9075,-6.85248],[-79.90647,-6.85309],[-79.90607,-6.85341],[-79.90582,-6.85362],[-79.90537,-6.85427],[-79.90454,-6.85367],[-79.90349,-6.85245],[-79.90266,-6.85122],[-79.902,-6.85024],[-79.90093,-6.8492],[-79.90017,-6.84913],[-79.89804,-6.84873],[-79.89631,-6.84974],[-79.89438,-6.85015],[-79.89154,-6.85055],[-79.89002,-6.85127],[-79.88799,-6.85106],[-79.88637,-6.85198],[-79.88404,-6.85137],[-79.88307,-6.85142],[-79.88221,-6.85147],[-79.88099,-6.85116],[-79.88048,-6.85055],[-79.87886,-6.85015],[-79.87764,-6.84985],[-79.87531,-6.85015],[-79.87409,-6.84974],[-79.87379,-6.84832],[-79.87348,-6.84721],[-79.87267,-6.847],[-79.87146,-6.84711],[-79.87085,-6.84609],[-79.86953,-6.84528],[-79.86729,-6.84518],[-79.86324,-6.84437],[-79.85969,-6.84386],[-79.85705,-6.84386],[-79.85573,-6.84406],[-79.8539,-6.84345],[-79.85258,-6.84366],[-79.85137,-6.84305],[-79.84974,-6.84285],[-79.84741,-6.84376],[-79.84558,-6.84427],[-79.84234,-6.84203],[-79.83594,-6.84264],[-79.83118,-6.84274],[-79.8258,-6.84295],[-79.82539,-6.84244],[-79.8257,-6.84],[-79.82539,-6.83777],[-79.82539,-6.83371],[-79.8256,-6.8326],[-79.8258,-6.83148],[-79.8256,-6.82955],[-79.82539,-6.82499],[-79.82539,-6.81992],[-79.82488,-6.81687],[-79.82458,-6.81403],[-79.82458,-6.8119],[-79.82936,-6.81045],[-79.82933,-6.80533],[-79.82932,-6.80386],[-79.8315,-6.79383],[-79.83357,-6.78427],[-79.83668,-6.7853],[-79.83906,-6.78614],[-79.84223,-6.78723],[-79.84385,-6.78778],[-79.84439,-6.78802],[-79.84489,-6.78827],[-79.84535,-6.78843],[-79.84684,-6.789],[-79.84806,-6.78957],[-79.85097,-6.78994],[-79.85154,-6.7907],[-79.85216,-6.79101],[-79.85239,-6.79113],[-79.85268,-6.79127],[-79.85334,-6.79346],[-79.85372,-6.79555],[-79.85363,-6.79907],[-79.85411,-6.80059],[-79.8561,-6.80173],[-79.85791,-6.80183],[-79.85858,-6.8023],[-79.86095,-6.80259],[-79.86333,-6.80316],[-79.86495,-6.80211],[-79.86676,-6.80221],[-79.86752,-6.80232],[-79.86758,-6.80233],[-79.86866,-6.80249],[-79.87008,-6.80221],[-79.8717,-6.80126],[-79.87332,-6.80097],[-79.87522,-6.80116],[-79.87622,-6.80196],[-79.87632,-6.80419],[-79.87627,-6.80453],[-79.87618,-6.80621],[-79.87636,-6.80774],[-79.87646,-6.80937],[-79.87641,-6.81039],[-79.8766,-6.81105],[-79.87813,-6.81203],[-79.87897,-6.81214],[-79.87981,-6.81226],[-79.88148,-6.81272],[-79.88358,-6.81384],[-79.88624,-6.81537],[-79.89049,-6.81752],[-79.89239,-6.81881],[-79.89353,-6.81965],[-79.89359,-6.81976],[-79.89443,-6.82027],[-79.90486,-6.8388],[-79.90503,-6.83913],[-79.90659,-6.84178],[-79.90868,-6.8455],[-79.90963,-6.84735],[-79.91062,-6.84914],[-79.91095,-6.84966],[-79.91138,-6.85031]];
+const BB = { minLon:-79.911377, maxLon:-79.824582, minLat:-6.8542676, maxLat:-6.7842669 };
+const K = Math.cos(6.82 * Math.PI / 180);
+const W = 1000, H = Math.round(W * (BB.maxLat - BB.minLat) / ((BB.maxLon - BB.minLon) * K));
+const P = (lat, lon) => [ (lon - BB.minLon) / (BB.maxLon - BB.minLon) * W, (BB.maxLat - lat) / (BB.maxLat - BB.minLat) * H ];
+
+const ESTADO = {
+  buscando:  { txt: 'Buscando unidad',     cls: 'nuevo',    c: 'var(--nuevo-fg)' },
+  espera:    { txt: 'Esperando respuesta', cls: 'espera',   c: 'var(--espera-fg)' },
+  camino:    { txt: 'En camino',           cls: 'curso',    c: 'var(--curso-fg)' },
+  atencion:  { txt: 'En atención',         cls: 'atencion', c: 'var(--atencion-fg)' },
+  sinunidad: { txt: 'Sin unidad',          cls: 'peligro',  c: 'var(--critico)' },
+  final:     { txt: 'Finalizada',          cls: 'exito',    c: 'var(--exito-fg)' },
+  cancel:    { txt: 'Cancelada',           cls: 'neutro',   c: 'var(--neutro-fg)' },
+};
+const TIPO = {
+  Robo:       { ico: 'person_alert', pri: 'critico', bg: 'var(--peligro-bg)', fg: 'var(--peligro-fg)' },
+  Incendio:   { ico: 'local_fire_department', pri: 'critico', bg: 'var(--peligro-bg)', fg: 'var(--peligro-fg)' },
+  Accidente:  { ico: 'car_crash', pri: 'alto', bg: 'var(--curso-bg)', fg: 'var(--curso-fg)' },
+  Disturbios: { ico: 'groups', pri: 'alto', bg: 'var(--curso-bg)', fg: 'var(--curso-fg)' },
+  Sospechosa: { ico: 'visibility', pri: 'medio', bg: 'var(--nuevo-bg)', fg: 'var(--nuevo-fg)' },
+};
+const ALERTAS = [
+  { id:'ALR-000153', tipo:'Robo',       est:'buscando',  lat:-6.8330, lon:-79.8870, ref:'Mz. F Lt. 4, Sector 1',   hora:'14:38', cuenta:'00:21', unidad:'—', sereno:'—', asig:'—', lleg:'—', res:'—' },
+  { id:'ALR-000152', tipo:'Robo',       est:'camino',    lat:-6.8262, lon:-79.8693, ref:'Mz. C Lt. 12, Sector 3',  hora:'14:36', cuenta:'01:34', unidad:'SV-001', sereno:'J. Ramos',  asig:'0 s', lleg:'ETA 2:10', res:'—' },
+  { id:'ALR-000151', tipo:'Accidente',  est:'espera',    lat:-6.8400, lon:-79.8480, ref:'Cruce principal, Sector 4', hora:'14:37', cuenta:'00:58', unidad:'SV-002', sereno:'L. Vega',  asig:'3 s', lleg:'—', res:'—', resta: 9 },
+  { id:'ALR-000150', tipo:'Disturbios', est:'atencion',  lat:-6.8070, lon:-79.8560, ref:'Parque central, Sector 2', hora:'14:25', cuenta:'13:12', unidad:'SV-004', sereno:'P. Díaz',  asig:'5 s', lleg:'3 min 48 s', res:'—' },
+  { id:'ALR-000149', tipo:'Sospechosa', est:'sinunidad', lat:-6.8450, lon:-79.8860, ref:'Mz. K Lt. 2, Sector 5',   hora:'14:32', cuenta:'05:40', unidad:'—', sereno:'—', asig:'—', lleg:'—', res:'—' },
+];
+const HISTORICAS = [
+  { id:'ALR-000148', tipo:'Accidente',  est:'final',  ref:'Av. principal, Sector 4', hora:'14:02', unidad:'SV-003', sereno:'C. Soto',  asig:'4 s',  lleg:'3 min 20 s', res:'Atendida' },
+  { id:'ALR-000147', tipo:'Robo',       est:'final',  ref:'Mz. B Lt. 9, Sector 1',   hora:'13:41', unidad:'SV-002', sereno:'L. Vega',  asig:'6 s',  lleg:'4 min 05 s', res:'Derivada' },
+  { id:'ALR-000146', tipo:'Sospechosa', est:'final',  ref:'Mz. H Lt. 3, Sector 3',   hora:'13:12', unidad:'SV-001', sereno:'J. Ramos', asig:'2 s',  lleg:'2 min 41 s', res:'Sin novedad' },
+  { id:'ALR-000145', tipo:'Incendio',   est:'final',  ref:'Mz. A Lt. 21, Sector 2',  hora:'12:50', unidad:'SV-004', sereno:'P. Díaz',  asig:'11 s', lleg:'6 min 10 s', res:'Requiere apoyo' },
+  { id:'ALR-000144', tipo:'Disturbios', est:'cancel', ref:'Mz. E Lt. 7, Sector 5',   hora:'12:31', unidad:'—',      sereno:'—',        asig:'—',    lleg:'—',          res:'Cancelada' },
+];
+const UNIDADES = [
+  { cod:'SV-001', placa:'CAM-204', sereno:'José Ramos',  est:'ruta',  lat:-6.8300, lon:-79.8665, alerta:'ALR-000152', pos:'hace 3 s',  vel:'28 km/h', zona:'Sector 3', hoy:6 },
+  { cod:'SV-002', placa:'CAM-118', sereno:'Luis Vega',   est:'disp',  lat:-6.8370, lon:-79.8530, alerta:'ALR-000151 · asignada (9 s)', pos:'hace 2 s', vel:'0 km/h',  zona:'Sector 4', hoy:5 },
+  { cod:'SV-003', placa:'MOT-032', sereno:'Carla Soto',  est:'disp',  lat:-6.8160, lon:-79.8420, alerta:'—', pos:'hace 4 s',  vel:'0 km/h',  zona:'Sector 2', hoy:7 },
+  { cod:'SV-004', placa:'CAM-307', sereno:'Pedro Díaz',  est:'aten',  lat:-6.8075, lon:-79.8575, alerta:'ALR-000150', pos:'hace 5 s',  vel:'0 km/h',  zona:'Sector 2', hoy:4 },
+  { cod:'SV-005', placa:'CAM-091', sereno:'Marco Gil',   est:'fuera', lat:-6.8490, lon:-79.8750, alerta:'—', pos:'hace 14 min', vel:'—',     zona:'Sector 5', hoy:1 },
+  { cod:'SV-006', placa:'MOT-045', sereno:'Ana Quispe',  est:'ruta',  lat:-6.8280, lon:-79.8800, alerta:'ALR-000153 · reasignada', pos:'hace 2 s', vel:'34 km/h', zona:'Sector 1', hoy:6 },
+];
+const UEST = { disp:['Disponible','var(--u-disp)','exito'], ruta:['En desplazamiento','var(--u-ruta)','curso'], aten:['En atención','var(--u-aten)','atencion'], fuera:['Fuera de servicio','var(--u-fuera)','neutro'] };
+
+/* ---------- mapa ---------- */
+function mapaSVG({ alertas = [], unidades = [], ruta = null, origen = null, zoom = null } = {}) {
+  const d = 'M' + POLY.map(([lon, lat]) => P(lat, lon).map((v) => v.toFixed(1)).join(',')).join(' L') + ' Z';
+  let calles = '';
+  for (let i = -20; i < 40; i++) calles += `<line x1="${i * 55}" y1="-50" x2="${i * 55 + 330}" y2="${H + 50}" />`;
+  for (let i = -10; i < 30; i++) calles += `<line x1="-50" y1="${i * 48}" x2="${W + 50}" y2="${i * 48 + 130}" />`;
+  const sector = (x1, y1, x2, y2) => `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="var(--map-zone)" stroke-width="1.5" stroke-dasharray="6 6" />`;
+  const alertasSVG = alertas.map((a) => {
+    const [x, y] = P(a.lat, a.lon); const e = ESTADO[a.est]; const t = TIPO[a.tipo];
+    const pulso = (a.est === 'buscando' || a.est === 'sinunidad') ? `<circle cx="${x}" cy="${y}" r="26" fill="${e.c}" opacity=".18"><animate attributeName="r" values="14;34;14" dur="2s" repeatCount="indefinite"/><animate attributeName="opacity" values=".3;0;.3" dur="2s" repeatCount="indefinite"/></circle>` : '';
+    return `${pulso}<g><circle cx="${x}" cy="${y}" r="15" fill="${e.c}" stroke="var(--surface)" stroke-width="3"/><text x="${x}" y="${y + 5}" text-anchor="middle" font-family="Material Symbols Rounded" font-size="16" fill="var(--surface)">${t.ico}</text></g>`;
+  }).join('');
+  const unidadesSVG = unidades.map((u) => {
+    const [x, y] = P(u.lat, u.lon); const c = UEST[u.est][1];
+    return `<g><rect x="${x - 13}" y="${y - 13}" width="26" height="26" rx="7" fill="${c}" stroke="var(--surface)" stroke-width="3"/><text x="${x}" y="${y + 5}" text-anchor="middle" font-family="Material Symbols Rounded" font-size="15" fill="var(--surface)">local_police</text>
+      <rect x="${x - 25}" y="${y + 16}" width="50" height="16" rx="8" fill="var(--surface)" stroke="var(--border)"/><text x="${x}" y="${y + 28}" text-anchor="middle" font-family="Geist Mono, monospace" font-size="10.5" font-weight="600" fill="var(--text)">${u.cod}</text></g>`;
+  }).join('');
+  let rutaSVG = '';
+  if (ruta) rutaSVG = `<polyline points="${ruta.map(([la, lo]) => P(la, lo).map((v) => v.toFixed(1)).join(',')).join(' ')}" fill="none" stroke="var(--map-line)" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" opacity=".9"/>`;
+  if (origen) { const [x, y] = P(origen[0], origen[1]); rutaSVG += `<circle cx="${x}" cy="${y}" r="7" fill="var(--surface)" stroke="var(--map-line)" stroke-width="4"/>`; }
+  const vb = zoom ? `${zoom[0]} ${zoom[1]} ${zoom[2]} ${zoom[3]}` : `0 0 ${W} ${H}`;
+  return `<svg class="mapa" viewBox="${vb}" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Mapa del distrito de La Victoria">
+    <defs><clipPath id="dist${zoom ? 'd' : 'g'}"><path d="${d}"/></clipPath></defs>
+    <rect x="-500" y="-500" width="${W + 1000}" height="${H + 1000}" fill="var(--map-bg)"/>
+    <path d="${d}" fill="var(--map-land)"/>
+    <g clip-path="url(#dist${zoom ? 'd' : 'g'})"><g stroke="var(--map-street)" stroke-width="3">${calles}</g>
+      <g stroke="var(--map-avenue)" stroke-width="7" stroke-linecap="round"><line x1="0" y1="${H * .46}" x2="${W}" y2="${H * .58}"/><line x1="${W * .46}" y1="0" x2="${W * .56}" y2="${H}"/></g>
+      ${sector(0, H * .46, W, H * .58)}${sector(W * .46, 0, W * .56, H)}</g>
+    <path d="${d}" fill="none" stroke="var(--map-zone)" stroke-width="3" stroke-dasharray="10 6"/>
+    <g font-family="Geist, sans-serif" font-size="15" font-weight="600" fill="var(--subtle)" opacity=".85"><text x="${W * .30}" y="${H * .30}">SECTOR 1</text><text x="${W * .62}" y="${H * .26}">SECTOR 2</text><text x="${W * .30}" y="${H * .70}">SECTOR 3</text><text x="${W * .66}" y="${H * .68}">SECTOR 4</text></g>
+    ${rutaSVG}${unidadesSVG}${alertasSVG}</svg>`;
+}
+
+/* ---------- render ---------- */
+const $ = (s) => document.querySelector(s);
+const avatar = (n, c) => `<span class="avatar" style="background:${c}">${n.split(' ').map((p) => p[0]).slice(0, 2).join('')}</span>`;
+const colores = ['#1D4ED8', '#0E7490', '#7C3AED', '#C2410C', '#047857', '#BE185D'];
+const badge = (k) => `<span class="badge ${ESTADO[k].cls}">${ESTADO[k].txt}</span>`;
+const tipoCel = (t) => `<span style="display:flex;align-items:center;gap:10px"><span class="tipo-ico" style="background:${TIPO[t].bg};color:${TIPO[t].fg}"><span class="icono">${TIPO[t].ico}</span></span><span><b style="font-weight:500">${t === 'Sospechosa' ? 'Situación sospechosa' : t}</b></span></span>`;
+
+$('#kpis').innerHTML = [
+  ['Alertas activas', '5', 'notifications_active', 'var(--peligro-bg)', 'var(--peligro-fg)', '1 sin unidad'],
+  ['Unidades disp.', '2', 'check_circle', 'var(--exito-bg)', 'var(--exito-fg)', 'de 6'],
+  ['En ruta', '2', 'directions_car', 'var(--curso-bg)', 'var(--curso-fg)', 'SV-001, SV-006'],
+  ['En atención', '1', 'shield', 'var(--atencion-bg)', 'var(--atencion-fg)', 'SV-004'],
+  ['Atendidas hoy', '24', 'task_alt', 'var(--exito-bg)', 'var(--exito-fg)', '+3 vs. ayer'],
+  ['T. respuesta', '9<small> s</small>', 'timer', 'var(--nuevo-bg)', 'var(--nuevo-fg)', 'hasta aceptar'],
+  ['T. llegada', '4:48<small> min</small>', 'schedule', 'var(--nuevo-bg)', 'var(--nuevo-fg)', 'promedio hoy'],
+  ['Reasignadas', '3', 'swap_horiz', 'var(--espera-bg)', 'var(--espera-fg)', '10 % del día'],
+].map(([t, v, i, bg, fg, d]) => `<div class="card kpi"><div class="fila"><span>${t}</span><span class="ico" style="background:${bg};color:${fg}"><span class="icono" style="font-size:16px">${i}</span></span></div><span class="valor">${v}</span><span class="detalle">${d}</span></div>`).join('');
+
+$('#mapa-grande').insertAdjacentHTML('afterbegin', mapaSVG({ alertas: ALERTAS, unidades: UNIDADES, ruta: [[-6.8300, -79.8665], [-6.8285, -79.8680], [-6.8270, -79.8690], [-6.8262, -79.8693]] }));
+
+$('#lista-alertas').innerHTML = ALERTAS.map((a, i) => {
+  const t = TIPO[a.tipo]; const e = ESTADO[a.est];
+  const extra = a.est === 'espera' ? `<span class="badge espera"><span class="icono" style="font-size:14px">hourglass_top</span>${a.resta} s para responder</span>` : a.est === 'sinunidad' ? `<span style="color:var(--peligro-fg);font-size:12px;font-weight:600">Escalada a la central · requiere acción</span>` : a.est === 'camino' ? `<span style="color:var(--muted);font-size:12px">SV-001 · ${a.lleg}</span>` : a.est === 'atencion' ? `<span style="color:var(--muted);font-size:12px">SV-004 · en el lugar</span>` : `<span style="color:var(--muted);font-size:12px">Buscando la unidad más cercana…</span>`;
+  const accion = a.est === 'sinunidad' ? `<button class="btn primario chico" data-modal="asignar" style="margin-top:2px;align-self:flex-start"><span class="icono" style="font-size:16px">edit_location_alt</span>Asignar manualmente</button>` : '';
+  return `<div class="item-alerta ${i === 1 ? 'sel' : ''}"><div class="fila"><span style="display:flex;align-items:center;gap:10px"><span class="tipo-ico" style="background:${t.bg};color:${t.fg}"><span class="icono">${t.ico}</span></span><span><b>${a.tipo === 'Sospechosa' ? 'Situación sospechosa' : a.tipo}</b><br><span class="mono">${a.id}</span></span></span><span class="cuenta" style="color:${a.est === 'sinunidad' ? 'var(--critico)' : 'var(--muted)'}">${a.cuenta}</span></div>
+    <div style="color:var(--muted);font-size:13px">${a.ref}</div><div style="display:flex;align-items:center;justify-content:space-between;gap:8px">${badge(a.est)}<span class="nivel" style="--c:var(--${t.pri})">${t.pri === 'critico' ? 'Crítica' : t.pri === 'alto' ? 'Alta' : 'Media'}</span></div>${extra}${accion}</div>`;
+}).join('');
+
+const act = [['14:38:02', 'Alerta ALR-000153 creada (Robo)', 'var(--primary)'], ['14:37:55', 'SV-003 no respondió; ALR-000153 reasignada a SV-006', 'var(--espera-fg)'], ['14:37:41', 'Sistema asignó ALR-000151 a SV-002 (850 m)', 'var(--primary)'], ['14:36:30', 'SV-001 aceptó ALR-000152 · ruta iniciada', 'var(--curso-fg)'],
+  ['14:32:11', 'ALR-000149 escalada a la central: sin unidades disponibles', 'var(--critico)'], ['14:25:42', 'SV-004 llegó a ALR-000150', 'var(--atencion-fg)']];
+$('#actividad').innerHTML = act.map(([h, t, c]) => `<li style="--c:${c}"><span class="punto"></span><div class="texto"><span>${t}</span><small class="mono">${h}</small></div></li>`).join('');
+
+const filaAlerta = (a) => `<tr><td><a href="#" data-ir="detalle" class="mono" style="color:var(--primary)">${a.id}</a></td><td>${tipoCel(a.tipo)}</td><td>${a.hora}</td><td><span style="color:var(--text)">${a.ref}</span></td><td>${badge(a.est)}</td>
+  <td>${a.unidad === '—' ? '<span style="color:var(--subtle)">Sin asignar</span>' : `<span style="display:flex;align-items:center;gap:8px">${avatar(a.sereno, colores[a.unidad.charCodeAt(5) % 6])}<span><b style="font-weight:500">${a.unidad}</b><br><small style="color:var(--subtle)">${a.sereno}</small></span></span>`}</td>
+  <td>${a.asig}</td><td>${a.lleg}</td><td>${a.res === '—' ? '<span style="color:var(--subtle)">—</span>' : a.res}</td></tr>`;
+$('#tabla-alertas').innerHTML = [...ALERTAS, ...HISTORICAS].map(filaAlerta).join('');
+
+$('#tabla-unidades').innerHTML = UNIDADES.map((u) => { const [t, c, cls] = UEST[u.est];
+  return `<tr><td><span style="display:flex;align-items:center;gap:10px"><i class="udot" style="--c:${c};width:12px;height:12px"></i><span><b>${u.cod}</b><br><small class="mono">${u.placa}</small></span></span></td>
+  <td><span style="display:flex;align-items:center;gap:8px">${avatar(u.sereno, colores[u.cod.charCodeAt(5) % 6])}${u.sereno}</span></td><td><span class="badge ${cls}">${t}</span></td>
+  <td>${u.alerta === '—' ? '<span style="color:var(--subtle)">—</span>' : u.alerta}</td><td><span style="display:flex;align-items:center;gap:6px;color:${u.est === 'fuera' ? 'var(--critico)' : 'var(--muted)'}"><span class="icono" style="font-size:16px">${u.est === 'fuera' ? 'signal_cellular_off' : 'gps_fixed'}</span>${u.pos}</span></td><td>${u.vel}</td><td>${u.zona}</td><td>${u.hoy}</td>
+  <td style="text-align:right;padding-right:18px"><button class="btn-icono" style="width:32px;height:32px" aria-label="Ver en el mapa"><span class="icono" style="font-size:16px">pin_drop</span></button></td></tr>`; }).join('');
+
+$('#mapa-detalle').innerHTML = mapaSVG({
+  alertas: [{ lat: -6.8262, lon: -79.8693, tipo: 'Robo', est: 'final' }],
+  unidades: [{ cod: 'SV-001', lat: -6.8262, lon: -79.8693, est: 'aten' }],
+  ruta: [[-6.8330, -79.8625], [-6.8318, -79.8640], [-6.8300, -79.8665], [-6.8285, -79.8680], [-6.8270, -79.8690], [-6.8262, -79.8693]],
+  origen: [-6.8330, -79.8625], zoom: [400, 420, 330, 230],
+});
+const hist = [['14:21:05', '<b>Rosa Paredes</b> creó la alerta (Robo)', 'var(--primary)'], ['14:21:05', 'Sistema asignó a <b>SV-002</b> · 850 m', 'var(--primary)'], ['14:21:12', '<b>SV-002</b> no puede atender: «Unidad ocupada»', 'var(--critico)'], ['14:21:12', 'Sistema reasignó a <b>SV-001</b> · 1.2 km', 'var(--espera-fg)'],
+  ['14:21:17', '<b>J. Ramos</b> aceptó la alerta · ruta iniciada', 'var(--curso-fg)'], ['14:25:42', 'Unidad <b>SV-001</b> llegó (detectado por GPS)', 'var(--atencion-fg)'], ['14:26:10', 'Evidencia registrada (3)', 'var(--atencion-fg)'], ['14:41:30', 'Atención finalizada · Atendida', 'var(--exito-fg)']];
+$('#historial').innerHTML = hist.map(([h, t, c]) => `<li style="--c:${c}"><span class="punto"></span><div class="texto"><span>${t}</span><small class="mono">${h}</small></div></li>`).join('');
+
+const dias = [['Lun', 28], ['Mar', 34], ['Mié', 25], ['Jue', 31], ['Vie', 40], ['Sáb', 33], ['Dom', 21]];
+$('#por-dia').innerHTML = dias.map(([d, v]) => `<div><b style="color:var(--text);font-size:12px">${v}</b><i style="height:${v / 40 * 100}%"></i>${d}</div>`).join('');
+const horas = [2,1,1,0,1,2,4,6,7,8,9,10,9,8,9,11,12,14,15,17,16,12,8,4];
+$('#por-hora').innerHTML = horas.map((v, h) => `<div><i style="height:${v / 17 * 100}%;opacity:${v > 13 ? 1 : .6}"></i>${h % 3 === 0 ? h : ''}</div>`).join('');
+const barra = (n, v, max, c) => `<div class="barra"><span>${n}</span><div class="pista"><span style="width:${v / max * 100}%;background:${c}"></span></div><b style="text-align:right">${v}</b></div>`;
+$('#por-tipo').innerHTML = [['Robo', 68, 'var(--critico)'], ['Situación sospechosa', 47, 'var(--medio)'], ['Disturbios', 36, 'var(--alto)'], ['Accidente', 31, 'var(--alto)'], ['Emergencia', 18, 'var(--critico)'], ['Otros', 12, 'var(--bajo)']].map(([n, v, c]) => barra(n, v, 68, c)).join('');
+$('#por-motivo').innerHTML = [['Unidad ocupada', 6, 'var(--espera-fg)'], ['Otra incidencia', 4, 'var(--espera-fg)'], ['Sin respuesta (15 s)', 4, 'var(--critico)'], ['Fuera de servicio', 2, 'var(--espera-fg)'], ['Otro', 1, 'var(--espera-fg)']].map(([n, v, c]) => barra(n, v, 6, c)).join('');
+
+/* ---------- modales ---------- */
+const cerrarBtn = '<button class="btn-icono" data-cerrar aria-label="Cerrar" style="width:32px;height:32px;border:0;background:transparent"><span class="icono">close</span></button>';
+const cab = (t, s) => `<div class="modal-cab"><div><h3>${t}</h3>${s ? `<p>${s}</p>` : ''}</div>${cerrarBtn}</div>`;
+const pie = (...b) => `<div class="modal-pie">${b.join('')}</div>`;
+const cancelar = '<button class="btn secundario" data-cerrar>Cancelar</button>';
+const etq = (l, req) => `<span class="etiqueta">${l}${req ? ' <i>*</i>' : ''}</span>`;
+const inp = (ph, v = '') => `<input class="input" placeholder="${ph}" value="${v}">`;
+const sel = (v) => `<div class="campo" style="width:100%;height:44px;color:var(--text)">${v}<span class="icono">expand_more</span></div>`;
+const tgl = (t, d, on) => `<div class="fila-toggle"><div><b style="font-weight:500">${t}</b><div class="ayuda" style="margin:2px 0 0">${d}</div></div><span class="toggle ${on ? 'on' : ''}"></span></div>`;
+const opcionUnidad = (u, tipo, dist, extra, estado) => `<div class="opcion ${estado || ''}"><span class="radio"></span><i class="udot" style="--c:${UEST[u.est][1]};width:12px;height:12px"></i><div class="grow"><b>${u.cod}</b> · ${u.sereno}<br><small style="color:var(--subtle)">${extra}</small></div><div style="text-align:right"><b>${dist}</b><br><small style="color:var(--subtle)">${tipo}</small></div></div>`;
+const U = Object.fromEntries(UNIDADES.map((u) => [u.cod, u]));
+
+const MODALES = {
+  asignar: { nombre: 'Asignar unidad manualmente', uso: 'Alerta escalada a la central (sin unidades)', html: () => `<div class="modal">${cab('Asignar unidad manualmente', '<span class="mono">ALR-000149</span> · Situación sospechosa · Mz. K Lt. 2, Sector 5')}
+    <div class="modal-cuerpo">
+      <div class="aviso peligro"><span class="icono">warning</span><div><b>Escalada a la central.</b> No hubo unidades disponibles en 120 s. La alerta lleva 05:40 sin atender.</div></div>
+      <div>${etq('Unidades cercanas', true)}<div style="display:flex;flex-direction:column;gap:8px">
+        ${opcionUnidad(U['SV-003'], '~5 min', '2.4 km', 'Disponible · hace 4 s', 'sel')}
+        ${opcionUnidad(U['SV-002'], '~6 min', '3.1 km', 'Disponible · atendía ALR-000151')}
+        ${opcionUnidad(U['SV-006'], '—', '1.9 km', 'En desplazamiento a ALR-000153 · no disponible', 'off')}
+        ${opcionUnidad(U['SV-005'], '—', '0.8 km', 'Fuera de servicio · sin señal 14 min', 'off')}
+      </div><div class="ayuda">Ordenadas por distancia en línea recta. Solo se pueden elegir unidades disponibles.</div></div>
+      <div>${etq('Motivo de la asignación manual', true)}<textarea class="input area" placeholder="Ej.: se asigna a SV-003 por cercanía al sector, el motor no tenía unidades."></textarea><div class="ayuda">Queda registrado en el historial y en la auditoría.</div></div>
+      ${tgl('Notificar con prioridad alta', 'El sereno recibe la alerta con sonido y el temporizador de 15 s.', true)}
+    </div>${pie(cancelar, '<button class="btn primario"><span class="icono">send</span>Asignar a SV-003</button>')}</div>` },
+
+  registrar: { nombre: 'Registrar alerta por llamada', uso: 'Operador recibe una llamada y crea la alerta', html: () => `<div class="modal" style="width:min(640px,100%)">${cab('Registrar alerta por llamada', 'Para vecinos que llaman a la central en lugar de usar la app.')}
+    <div class="modal-cuerpo">
+      <div>${etq('Tipo de alerta', true)}<div class="cuadricula">
+        <div class="opcion sel"><span class="icono" style="color:var(--critico)">person_alert</span>Robo</div><div class="opcion"><span class="icono">local_fire_department</span>Incendio</div><div class="opcion"><span class="icono">car_crash</span>Accidente</div><div class="opcion"><span class="icono">groups</span>Disturbios</div>
+        <div class="opcion"><span class="icono">visibility</span>Sospechosa</div><div class="opcion"><span class="icono">emergency</span>Emergencia</div><div class="opcion"><span class="icono">storm</span>Desastre</div><div class="opcion"><span class="icono">more_horiz</span>Otro</div></div></div>
+      <div>${etq('Ubicación del incidente', true)}<div class="mapa-wrap" style="height:170px">${mapaSVG({ alertas: [{ lat: -6.8262, lon: -79.8693, tipo: 'Robo', est: 'buscando' }], zoom: [316, 436, 340, 100] })}</div>
+        <div class="aviso exito" style="margin-top:8px"><span class="icono">check_circle</span><div>Dentro del distrito · <b>Sector 3</b>. Se aplica un margen de 50 m en el límite.</div></div>
+        <div style="margin-top:8px">${inp('Referencia (ej.: frente a la losa deportiva)', 'Frente a la losa deportiva')}</div></div>
+      <div class="dos"><div>${etq('Nombre de quien llama')}${inp('Nombre y apellido', 'Rosa Paredes')}</div><div>${etq('Teléfono', true)}${inp('9 dígitos', '987654321')}</div></div>
+      <div>${etq('Descripción')}<textarea class="input area" placeholder="Qué está pasando…">Dos personas arrebataron un celular y huyeron hacia el parque.</textarea></div>
+    </div>${pie(cancelar, '<button class="btn primario"><span class="icono">add_alert</span>Registrar y asignar</button>')}</div>` },
+
+  usuario: { nombre: 'Nuevo usuario', uso: 'Administración · Usuarios y roles', html: () => `<div class="modal">${cab('Nuevo usuario', 'Los ciudadanos se registran solos desde la app. Aquí se crea personal.')}
+    <div class="modal-cuerpo">
+      <div class="dos"><div>${etq('Nombres', true)}${inp('Nombres', 'Carla')}</div><div>${etq('Apellidos', true)}${inp('Apellidos', 'Soto Rivas')}</div></div>
+      <div class="dos"><div>${etq('DNI', true)}${inp('8 dígitos', '45678912')}</div><div>${etq('Teléfono')}${inp('9 dígitos', '965432187')}</div></div>
+      <div>${etq('Correo institucional')}${inp('nombre@munilavictoria.gob.pe', 'csoto@munilavictoria.gob.pe')}</div>
+      <div>${etq('Rol', true)}${sel('Sereno')}<div class="ayuda">Sereno: usa la app móvil de serenazgo y se le asigna una unidad.</div></div>
+      <div>${etq('Contraseña temporal', true)}<span style="position:relative;display:block"><input class="input" type="text" value="Vict-4829-Xq" style="padding-right:48px;font-family:'Geist Mono',monospace"><span class="icono" style="position:absolute;right:14px;top:13px;color:var(--muted)">content_copy</span></span><div class="ayuda">Se muestra una sola vez. Mínimo 8 caracteres.</div></div>
+      ${tgl('Usuario activo', 'Si lo desactivas, no podrá iniciar sesión.', true)}
+    </div>${pie(cancelar, '<button class="btn primario">Crear usuario</button>')}</div>` },
+
+  unidad: { nombre: 'Nueva unidad', uso: 'Unidades · asignar sereno y zona', html: () => `<div class="modal">${cab('Nueva unidad', 'Vehículo o moto de serenazgo que aparecerá en el mapa.')}
+    <div class="modal-cuerpo">
+      <div class="dos"><div>${etq('Código', true)}${inp('SV-000', 'SV-007')}<div class="ayuda">Debe ser único.</div></div><div>${etq('Placa')}${inp('ABC-123', 'CAM-412')}</div></div>
+      <div class="dos"><div>${etq('Tipo', true)}${sel('Camioneta')}</div><div>${etq('Zona base')}${sel('Sector 3')}</div></div>
+      <div>${etq('Sereno asignado')}${sel('<span style="display:flex;align-items:center;gap:8px">' + avatar('Carla Soto', '#7C3AED') + 'Carla Soto · sin unidad</span>')}
+        <div class="ayuda">Un sereno opera una sola unidad a la vez.</div></div>
+      <div class="aviso info"><span class="icono">info</span><div>La unidad nace <b>Fuera de servicio</b>. Pasa a <b>Disponible</b> cuando el sereno inicia sesión y comparte su ubicación.</div></div>
+      ${tgl('Unidad activa', 'Las unidades inactivas no reciben alertas ni aparecen en el mapa.', true)}
+    </div>${pie(cancelar, '<button class="btn primario">Crear unidad</button>')}</div>` },
+
+  tipo: { nombre: 'Tipo de alerta', uso: 'Administración · catálogo de tipos', html: () => `<div class="modal">${cab('Editar tipo de alerta', 'Define cómo se muestra y qué prioridad tiene en la cola de la central.')}
+    <div class="modal-cuerpo">
+      <div class="dos"><div>${etq('Nombre', true)}${inp('Nombre', 'Robo')}</div><div>${etq('Código')}<input class="input" value="ROBO" disabled style="opacity:.6;font-family:'Geist Mono',monospace"></div></div>
+      <div>${etq('Icono', true)}<div class="cuadricula" style="grid-template-columns:repeat(6,1fr)">${['person_alert', 'local_fire_department', 'car_crash', 'groups', 'visibility', 'emergency'].map((i, n) => `<div class="opcion ${n === 0 ? 'sel' : ''}" style="padding:12px 0"><span class="icono" style="font-size:22px">${i}</span></div>`).join('')}</div></div>
+      <div>${etq('Descripción')}${inp('Descripción corta', 'Robo o asalto en curso')}</div>
+      <div>${etq('Prioridad', true)}<div class="cuadricula">
+        <div class="opcion sel"><span class="nivel" style="--c:var(--critico)">Crítica</span></div><div class="opcion"><span class="nivel" style="--c:var(--alto)">Alta</span></div><div class="opcion"><span class="nivel" style="--c:var(--medio)">Media</span></div><div class="opcion"><span class="nivel" style="--c:var(--bajo)">Baja</span></div></div>
+        <div class="ayuda">Las alertas críticas se asignan primero cuando hay varias a la vez.</div></div>
+      ${tgl('Tipo activo', 'Si lo desactivas, los ciudadanos dejan de verlo en la app.', true)}
+    </div>${pie(cancelar, '<button class="btn primario">Guardar cambios</button>')}</div>` },
+
+  cancelar: { nombre: 'Cancelar alerta', uso: 'Acción peligrosa con motivo obligatorio', html: () => `<div class="modal" style="width:min(480px,100%)"><div class="modal-cuerpo" style="padding-top:24px">
+      <div style="display:flex;gap:16px;align-items:flex-start"><span style="width:44px;height:44px;border-radius:99px;background:var(--peligro-bg);color:var(--peligro-fg);display:grid;place-items:center;flex-shrink:0"><span class="icono" style="font-size:24px">report</span></span>
+        <div style="flex:1"><h3 style="margin:2px 0 6px;font-size:18px;font-weight:600">¿Cancelar la alerta ALR-000151?</h3><p style="margin:0;color:var(--muted)">Accidente · Cruce principal, Sector 4. Esta acción no se puede deshacer.</p></div>${cerrarBtn}</div>
+      <div class="aviso curso"><span class="icono">info</span><div><b>Qué pasará:</b> SV-002 queda libre al instante, el ciudadano recibe el aviso de cancelación y el motivo queda en la auditoría.</div></div>
+      <div>${etq('Motivo de la cancelación', true)}${sel('Falsa alarma confirmada por llamada')}</div>
+      <div>${etq('Observación')}<textarea class="input area" placeholder="Detalle opcional…"></textarea></div>
+    </div>${pie('<button class="btn secundario" data-cerrar>Volver</button>', '<button class="btn peligro-lleno"><span class="icono">block</span>Sí, cancelar alerta</button>')}</div>` },
+};
+$('#galeria').innerHTML = Object.entries(MODALES).map(([id, m]) => `<figure><div class="vista">${m.html()}</div><figcaption><span><b>${m.nombre}</b><br><small>${m.uso}</small></span><button class="btn secundario chico" data-modal="${id}"><span class="icono" style="font-size:16px">open_in_new</span>Abrir</button></figcaption></figure>`).join('');
+function abrirModal(id) { const f = $('#fondo-modal'); f.innerHTML = MODALES[id].html(); f.classList.add('abierto'); }
+function cerrarModal() { $('#fondo-modal').classList.remove('abierto'); }
+document.addEventListener('click', (e) => {
+  const m = e.target.closest('[data-modal]'); if (m) { e.preventDefault(); abrirModal(m.dataset.modal); return; }
+  if (e.target.closest('[data-cerrar]') || e.target.id === 'fondo-modal') cerrarModal();
+});
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') cerrarModal(); });
+
+/* ---------- navegación y tema ---------- */
+const plantilla = document.getElementById('layout');
+document.querySelectorAll('section[data-pantalla]:not([data-pantalla="login"])').forEach((s) => {
+  const layout = plantilla.content.cloneNode(true);
+  const slot = layout.querySelector('[data-slot]');
+  while (s.firstChild) slot.appendChild(s.firstChild);
+  layout.querySelector('[data-titulo]').textContent = s.dataset.titulo;
+  layout.querySelectorAll('[data-nav]').forEach((a) => {
+    if (a.dataset.nav === s.dataset.pantalla || (s.dataset.pantalla === 'detalle' && a.dataset.nav === 'alertas')) a.classList.add('activo');
+    a.dataset.ir = a.dataset.nav;
+  });
+  s.appendChild(layout);
+});
+function ir(p) {
+  document.querySelectorAll('section[data-pantalla]').forEach((s) => s.classList.toggle('activa', s.dataset.pantalla === p));
+  document.querySelectorAll('.pestanas [data-ir]').forEach((b) => b.setAttribute('aria-selected', String(b.dataset.ir === p)));
+  window.scrollTo(0, 0);
+}
+document.addEventListener('click', (e) => { const d = e.target.closest('[data-ir]'); if (d) { e.preventDefault(); ir(d.dataset.ir); } });
+function alternarTema() {
+  const o = document.body.classList.toggle('t-oscuro');
+  document.body.classList.toggle('t-claro', !o);
+  document.getElementById('tema').textContent = o ? 'Modo claro' : 'Modo oscuro';
+  document.querySelectorAll('.topbar .btn-icono .icono').forEach((i) => { if (i.textContent === 'dark_mode' || i.textContent === 'light_mode') i.textContent = o ? 'light_mode' : 'dark_mode'; });
+}
+document.getElementById('tema').addEventListener('click', alternarTema);
+</script>
+</body>
+</html>

@@ -1,0 +1,90 @@
+<div class="flex flex-col gap-6">
+  <div class="flex flex-col gap-1.5">
+    <h1 class="m-0 text-[28px] font-semibold tracking-tight">Auditoría</h1>
+    <p class="m-0 text-sm text-muted">Quién hizo qué y cuándo. Es solo de lectura: nadie puede editar este registro desde el sistema.</p>
+  </div>
+
+  <form class="flex flex-wrap items-end gap-3 rounded-xl border border-line bg-surface p-4" (ngSubmit)="buscar()">
+    <label class="flex min-w-48 flex-col gap-1 text-xs font-medium text-muted">
+      Acción
+      <select name="accion" [(ngModel)]="accion" (ngModelChange)="buscar()" class="h-10 rounded-lg border border-line bg-surface px-3 text-sm text-ink">
+        <option value="">Todas</option>
+        @for (a of acciones(); track a) { <option [value]="a">{{ nombreAccion(a) }}</option> }
+      </select>
+    </label>
+    <label class="flex min-w-56 flex-1 flex-col gap-1 text-xs font-medium text-muted">
+      Buscar (usuario, DNI o detalle)
+      <input name="q" [(ngModel)]="texto" placeholder="Ej.: 00000003 o «cancelada»" class="h-10 rounded-lg border border-line bg-surface px-3 text-sm text-ink" />
+    </label>
+    <label class="flex flex-col gap-1 text-xs font-medium text-muted">
+      Desde
+      <input name="desde" type="date" [(ngModel)]="desde" (ngModelChange)="buscar()" class="h-10 rounded-lg border border-line bg-surface px-3 text-sm text-ink" />
+    </label>
+    <label class="flex flex-col gap-1 text-xs font-medium text-muted">
+      Hasta
+      <input name="hasta" type="date" [(ngModel)]="hasta" (ngModelChange)="buscar()" class="h-10 rounded-lg border border-line bg-surface px-3 text-sm text-ink" />
+    </label>
+    <button type="submit" class="h-10 cursor-pointer rounded-lg border-0 bg-primary px-4 text-sm font-semibold text-on-primary">Buscar</button>
+    <button type="button" (click)="limpiar()" class="h-10 cursor-pointer rounded-lg border border-line bg-surface px-4 text-sm font-medium text-muted">Limpiar</button>
+  </form>
+
+  <section class="overflow-hidden rounded-xl border border-line bg-surface">
+    <div class="h-1">@if (cargando()) { <mat-progress-bar mode="indeterminate" /> }</div>
+    @if (error()) {
+      <p class="m-0 px-6 py-10 text-center text-sm text-peligro-fg" role="alert">No se pudo cargar la auditoría.</p>
+    } @else {
+      <div class="overflow-x-auto">
+        <table class="w-full min-w-[900px] border-collapse text-left">
+          <thead>
+            <tr class="border-b border-line bg-surface-2 text-xs font-semibold uppercase tracking-wide text-subtle">
+              <th class="h-11 w-44 px-6 font-semibold">Fecha y hora</th>
+              <th class="w-56 px-4 font-semibold">Usuario</th>
+              <th class="w-64 px-4 font-semibold">Acción</th>
+              <th class="px-4 font-semibold">Detalle</th>
+              <th class="w-40 px-6 font-semibold">Origen</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (r of pagina().items; track r.id) {
+              <tr class="border-b border-line align-top last:border-b-0 hover:bg-surface-2">
+                <td class="px-6 py-3 font-mono text-[13px] text-muted">{{ r.creadoEn | date: 'd MMM y, HH:mm:ss' }}</td>
+                <td class="px-4 py-3 text-sm">
+                  @if (r.usuario) {
+                    <span class="flex flex-col"><b class="font-semibold">{{ r.usuario }}</b><span class="font-mono text-xs text-subtle">DNI {{ r.dni }}</span></span>
+                  } @else {
+                    <span class="text-subtle">Sistema / sin sesión</span>
+                  }
+                </td>
+                <td class="px-4 py-3">
+                  <span class="inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold" [class]="clase(r.accion)">{{ nombreAccion(r.accion) }}</span>
+                </td>
+                <td class="px-4 py-3 text-sm text-muted">
+                  @if (r.entidad) { <span class="text-subtle">{{ r.entidad }}@if (r.entidadId) { #{{ r.entidadId }} }</span> }
+                  @if (r.detalle) { <span class="block text-ink">{{ r.detalle }}</span> }
+                </td>
+                <td class="px-6 py-3 text-xs text-subtle" [matTooltip]="r.dispositivo ?? ''">{{ r.ip ?? '—' }}</td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="5" class="px-6 py-14 text-center text-muted">
+                  <div class="flex flex-col items-center gap-2">
+                    <mat-icon class="text-subtle">manage_search</mat-icon>
+                    <b class="text-ink">No hay registros con esos filtros</b>
+                  </div>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      <footer class="flex items-center justify-between border-t border-line px-6 py-2.5 text-sm text-muted">
+        <span>{{ rango() }}</span>
+        <span class="flex items-center gap-1">
+          <button matIconButton type="button" aria-label="Página anterior" [disabled]="pagina().pagina === 0" (click)="irA(pagina().pagina - 1)"><mat-icon>chevron_left</mat-icon></button>
+          <span>Página {{ pagina().pagina + 1 }} de {{ paginas() }}</span>
+          <button matIconButton type="button" aria-label="Página siguiente" [disabled]="pagina().pagina + 1 >= paginas()" (click)="irA(pagina().pagina + 1)"><mat-icon>chevron_right</mat-icon></button>
+        </span>
+      </footer>
+    }
+  </section>
+</div>

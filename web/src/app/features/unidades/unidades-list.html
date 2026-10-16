@@ -1,0 +1,103 @@
+<div class="flex flex-col gap-6">
+  <div class="flex flex-col gap-1.5">
+    <h1 class="m-0 text-[28px] font-semibold tracking-tight">Unidades en tiempo real</h1>
+    <p class="m-0 text-sm text-muted">
+      {{ store.unidades().length }} unidades · {{ cuentas()['DISPONIBLE'] ?? 0 }} disponibles · {{ cuentas()['EN_DESPLAZAMIENTO'] ?? 0 }} en ruta ·
+      {{ cuentas()['EN_ATENCION'] ?? 0 }} en atención · {{ cuentas()['FUERA_DE_SERVICIO'] ?? 0 }} fuera de servicio
+    </p>
+  </div>
+
+  <div class="campo-denso flex flex-wrap items-center gap-3 rounded-xl border border-line bg-surface p-3">
+    <mat-form-field class="min-w-[260px] flex-1">
+      <mat-icon matPrefix class="icono-sm ml-3 text-subtle">search</mat-icon>
+      <input matInput [formControl]="busqueda" type="search" aria-label="Buscar" placeholder="Buscar por código, placa o sereno" />
+    </mat-form-field>
+    <div class="flex flex-wrap items-center gap-2" role="group" aria-label="Filtrar por estado">
+      <button
+        type="button"
+        class="h-8 cursor-pointer rounded-full border px-3 font-sans text-[13px] font-medium"
+        [class]="filtro() === null ? 'border-primary bg-primary text-on-primary' : 'border-line bg-surface text-muted'"
+        [attr.aria-pressed]="filtro() === null"
+        (click)="filtro.set(null)"
+      >
+        Todas
+      </button>
+      @for (e of estados; track e.clave) {
+        <button
+          type="button"
+          class="inline-flex h-8 cursor-pointer items-center gap-1.5 rounded-full border px-3 font-sans text-[13px] font-medium"
+          [class]="filtro() === e.clave ? 'border-primary bg-primary text-on-primary' : 'border-line bg-surface text-muted'"
+          [attr.aria-pressed]="filtro() === e.clave"
+          (click)="filtro.set(filtro() === e.clave ? null : e.clave)"
+        >
+          <i class="size-2.5 rounded-[3px]" [class]="e.punto"></i>{{ e.etiqueta }}
+        </button>
+      }
+    </div>
+  </div>
+
+  <section class="overflow-hidden rounded-xl border border-line bg-surface">
+    <div class="overflow-x-auto">
+      <table class="w-full min-w-[900px] border-collapse text-left">
+        <thead>
+          <tr class="border-b border-line bg-surface-2 text-xs font-semibold uppercase tracking-wide text-subtle">
+            <th class="h-11 px-6 font-semibold">Unidad</th>
+            <th class="px-4 font-semibold">Sereno</th>
+            <th class="w-48 px-4 font-semibold">Estado</th>
+            <th class="w-40 px-4 font-semibold">Alerta actual</th>
+            <th class="w-44 px-4 font-semibold">Última posición</th>
+            <th class="w-28 px-4 font-semibold">Velocidad</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (u of filtradas(); track u.id) {
+            <tr class="h-14 border-b border-line last:border-b-0 hover:bg-surface-2">
+              <td class="px-6">
+                <span class="flex items-center gap-3">
+                  <i class="size-3 shrink-0 rounded-[3px]" [class]="punto(u.estado)"></i>
+                  <span class="flex flex-col">
+                    <b class="text-sm">{{ u.codigo }}</b>
+                    <span class="font-mono text-xs text-subtle">{{ u.placa ?? 'Sin placa' }}</span>
+                  </span>
+                </span>
+              </td>
+              <td class="px-4">
+                @if (u.sereno) {
+                  <span class="flex items-center gap-2 text-sm"><app-avatar [nombre]="u.sereno" />{{ u.sereno }}</span>
+                } @else {
+                  <span class="text-sm text-subtle">Sin sereno</span>
+                }
+              </td>
+              <td class="px-4"><app-estado-unidad [estado]="u.estado" /></td>
+              <td class="px-4 text-sm">
+                @if (u.alertaActualId) {
+                  <a [routerLink]="['/alertas', u.alertaActualId]" class="font-mono text-[13px] text-primary no-underline hover:underline">{{ codigo(u.alertaActualId) }}</a>
+                } @else {
+                  <span class="text-subtle">—</span>
+                }
+              </td>
+              <td class="px-4 text-sm">
+                @if (u.ubicacionEn) {
+                  <span class="flex items-center gap-1.5 text-muted"><mat-icon class="icono-xs">gps_fixed</mat-icon>{{ u.ubicacionEn | tiempoRelativo }}</span>
+                } @else {
+                  <span class="flex items-center gap-1.5 text-peligro-fg"><mat-icon class="icono-xs">signal_cellular_off</mat-icon>Sin señal</span>
+                }
+              </td>
+              <td class="px-4 text-sm">{{ u.velocidadKmh === null ? '—' : u.velocidadKmh + ' km/h' }}</td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="6" class="px-6 py-14 text-center text-muted">
+                <div class="flex flex-col items-center gap-2">
+                  <mat-icon class="text-subtle">local_police</mat-icon>
+                  <b class="text-ink">No hay unidades que coincidan</b>
+                  <span class="text-sm">Cambia el filtro o la búsqueda.</span>
+                </div>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </section>
+</div>

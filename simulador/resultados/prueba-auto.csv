@@ -1,0 +1,8 @@
+﻿id;tipo;estado;truncada;t_asignacion_s;t_aceptacion_s;t_llegada_s;t_atencion_s;reasignaciones;escalada;manual
+169;ROBO;FINALIZADA;false;0,1;5,0;53,4;34,3;0;false;false
+170;SOSPECHOSA;CANCELADA;true;0,0;158,0;;;1;true;false
+171;ROBO;FINALIZADA;false;0,0;35,2;81,6;30,2;2;false;false
+172;DISTURBIOS;FINALIZADA;false;67,8;6,7;167,0;21,2;0;false;false
+173;DISTURBIOS;FINALIZADA;false;106,9;5,8;198,2;42,3;0;false;false
+174;OTRO;FINALIZADA;false;0,0;8,1;99,7;21,1;0;false;false
+175;ROBO;FINALIZADA;false;4,5;8,6;145,9;30,2;0;false;false

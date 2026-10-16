@@ -1,0 +1,104 @@
+<div class="flex h-dvh overflow-hidden bg-app text-ink">
+  <!-- Fondo oscuro detrás del menú en pantallas chicas -->
+  @if (menuAbierto()) {
+    <div class="fixed inset-0 z-[1100] bg-black/40 lg:hidden" (click)="menuAbierto.set(false)" aria-hidden="true"></div>
+  }
+
+  <!-- Menú lateral: 248px (w-62). En móvil se desliza; en lg queda fijo. -->
+  <aside
+    class="fixed inset-y-0 left-0 z-[1200] flex w-62 shrink-0 flex-col gap-7 border-r border-line bg-surface px-4 py-5 transition-transform lg:static lg:translate-x-0"
+    [class.-translate-x-full]="!menuAbierto()"
+  >
+    <a routerLink="/" class="flex items-center gap-3 px-2 py-1 text-ink no-underline">
+      <span class="flex size-9 items-center justify-center rounded-[10px] bg-primary text-on-primary">
+        <mat-icon class="icono-sm" aria-hidden="true">{{ marca.icono }}</mat-icon>
+      </span>
+      <span class="flex flex-col">
+        <span class="text-[15px] font-bold leading-tight tracking-tight">{{ marca.nombre }}</span>
+        <span class="text-[11px] text-subtle">{{ marca.subtitulo }}</span>
+      </span>
+    </a>
+
+    <!-- Las secciones se desplazan si no caben; el usuario y «Cerrar sesión» quedan fijos abajo -->
+    <div class="flex min-h-0 flex-1 flex-col gap-7 overflow-y-auto">
+    @for (seccion of navegacion(); track seccion.titulo) {
+      <nav [attr.aria-label]="seccion.titulo" class="flex flex-col gap-0.5">
+        <span class="px-3 pb-1.5 text-[11px] font-semibold uppercase tracking-wider text-subtle">{{ seccion.titulo }}</span>
+        @for (item of seccion.items; track item.ruta) {
+          <a
+            [routerLink]="item.ruta"
+            routerLinkActive="bg-nav-active! text-nav-active-ink!"
+            (click)="menuAbierto.set(false)"
+            class="flex h-[38px] items-center gap-3 rounded-lg px-3 text-sm font-medium text-muted no-underline hover:bg-surface-2"
+          >
+            <mat-icon class="icono-sm" aria-hidden="true">{{ item.icono }}</mat-icon>
+            {{ item.etiqueta }}
+            @if (item.contador === 'alertas' && alertasActivas() > 0) {
+              <span class="ml-auto rounded-full bg-critico px-[7px] text-[11px] font-semibold text-white">{{ alertasActivas() }}</span>
+            }
+          </a>
+        }
+      </nav>
+    }
+
+    </div>
+
+    @if (auth.usuario(); as usuario) {
+      <div class="flex flex-col gap-2">
+      <div class="flex items-center gap-3 rounded-xl border border-line bg-surface-2 p-3">
+        <app-avatar [nombre]="auth.nombre()" tamanio="md" />
+        <div class="flex min-w-0 flex-1 flex-col">
+          <span class="truncate text-sm font-semibold">{{ auth.nombre() }}</span>
+          <span class="truncate text-xs text-subtle">{{ roles[usuario.rol] }}</span>
+        </div>
+      </div>
+      <button matButton="outlined" type="button" class="w-full" (click)="auth.logout()">
+        <mat-icon>logout</mat-icon>Cerrar sesión
+      </button>
+      </div>
+    }
+  </aside>
+
+  <div class="flex min-w-0 flex-1 flex-col">
+    <!-- Barra superior: 64px -->
+    <header class="flex h-16 shrink-0 items-center gap-3 border-b border-line bg-surface px-4 sm:px-7">
+      <button matIconButton type="button" class="lg:hidden!" (click)="menuAbierto.set(true)" aria-label="Abrir menú">
+        <mat-icon>menu</mat-icon>
+      </button>
+      <span class="flex-1 truncate text-sm font-semibold">{{ titulo() }}</span>
+
+      <!-- Estado de la conexión en tiempo real -->
+      @if (store.conectado()) {
+        <span class="inline-flex h-8 items-center gap-2 rounded-full bg-exito-bg px-3 text-xs font-semibold text-exito-fg" role="status">
+          <span class="size-2 animate-[pulso-vivo_1.6s_infinite] rounded-full bg-current"></span>
+          En vivo
+        </span>
+      } @else {
+        <span
+          class="inline-flex h-8 items-center gap-2 rounded-full bg-peligro-bg px-3 text-xs font-semibold text-peligro-fg"
+          role="status"
+          matTooltip="Sin conexión en tiempo real. Reintentando…"
+        >
+          <mat-icon class="icono-xs">cloud_off</mat-icon>
+          Sin conexión
+        </span>
+      }
+
+      <button
+        matIconButton
+        type="button"
+        (click)="tema.alternar()"
+        [attr.aria-label]="tema.oscuro() ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'"
+        [matTooltip]="tema.oscuro() ? 'Modo claro' : 'Modo oscuro'"
+      >
+        <mat-icon>{{ tema.oscuro() ? 'light_mode' : 'dark_mode' }}</mat-icon>
+      </button>
+    </header>
+
+    <main class="flex-1 overflow-y-auto">
+      <div class="w-full p-4 sm:p-7">
+        <router-outlet />
+      </div>
+    </main>
+  </div>
+</div>

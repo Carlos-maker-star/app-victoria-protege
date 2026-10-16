@@ -1,0 +1,101 @@
+<div class="flex flex-col gap-6">
+  <div class="flex flex-wrap items-end justify-between gap-4">
+    <div class="flex flex-col gap-1.5">
+      <h1 class="m-0 text-[28px] font-semibold tracking-tight">Zonas y sectores</h1>
+      <p class="m-0 text-sm text-muted">
+        {{ distrito()?.nombre ?? 'Distrito' }}@if (distrito(); as d) { · {{ d.areaKm2 }} km² }
+        · {{ activos().length }} {{ activos().length === 1 ? 'sector activo' : 'sectores activos' }}
+      </p>
+    </div>
+    @if (!dibujando()) {
+      <div class="flex flex-wrap gap-2">
+        <button matButton type="button" (click)="recalcular()" matTooltip="Vuelve a ubicar cada alerta en su sector"><mat-icon>sync</mat-icon>Recalcular alertas</button>
+        <button matButton type="button" (click)="cuadricula()"><mat-icon>grid_view</mat-icon>Generar cuadrícula</button>
+        <button matButton="filled" type="button" (click)="empezarDibujo('sector')"><mat-icon>draw</mat-icon>Dibujar sector</button>
+      </div>
+    }
+  </div>
+
+  @if (dibujando()) {
+    <div class="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-line bg-nuevo-bg px-4 py-3 text-nuevo-fg" role="status">
+      <span class="text-sm">
+        @if (dibujo() === 'distrito') {
+          <b>Dibujando el nuevo límite del distrito.</b> Haz clic en el mapa para marcar cada esquina (mínimo 3), sin cruzar líneas. Los sectores activos y las alertas en curso deben quedar dentro.
+        } @else {
+          <b>Dibujando un sector.</b> Haz clic en el mapa para marcar cada esquina (mínimo 3). Debe quedar dentro del distrito y sin cruzarse consigo mismo.
+        }
+        <b>{{ vertices().length }}</b> {{ vertices().length === 1 ? 'punto' : 'puntos' }}.
+      </span>
+      <span class="flex gap-2">
+        <button matButton type="button" [disabled]="vertices().length === 0" (click)="deshacer()"><mat-icon>undo</mat-icon>Deshacer</button>
+        <button matButton type="button" (click)="cancelarDibujo()">Cancelar</button>
+        <button matButton="filled" type="button" [disabled]="vertices().length < 3" (click)="guardarDibujo()">{{ dibujo() === 'distrito' ? 'Usar como límite' : 'Guardar sector' }}</button>
+      </span>
+    </div>
+  }
+
+  @if (!dibujando()) {
+    <section class="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-line bg-surface px-5 py-3.5">
+      <span class="text-sm text-muted">
+        <b class="text-ink">Límite del distrito</b> (lo azul del mapa): decide dónde se aceptan alertas. Si la municipalidad lo acota, redefínelo aquí.
+      </span>
+      <span class="flex flex-wrap gap-2">
+        <button matButton type="button" (click)="empezarDibujo('distrito')"><mat-icon>polyline</mat-icon>Dibujar nuevo límite</button>
+        <button matButton type="button" (click)="archivo.click()" matTooltip="GeoJSON con un Polygon o MultiPolygon"><mat-icon>upload_file</mat-icon>Cargar archivo GeoJSON</button>
+        <input #archivo type="file" accept=".geojson,.json,application/geo+json,application/json" hidden (change)="cargarArchivo($event)" />
+      </span>
+    </section>
+  }
+
+  <div class="grid gap-6 lg:grid-cols-[minmax(0,1fr)_380px]">
+    <section class="h-[520px] overflow-hidden rounded-xl border border-line bg-surface">
+      <app-mapa-zonas
+        [zonas]="zonasMapa()"
+        [dibujando]="dibujando()"
+        [seleccionadaId]="seleccionadaId()"
+        (vertices)="vertices.set($event)"
+        (seleccionar)="seleccionar($event)"
+      />
+    </section>
+
+    <section class="overflow-hidden rounded-xl border border-line bg-surface">
+      <div class="h-1">@if (cargando()) { <mat-progress-bar mode="indeterminate" /> }</div>
+      @if (inactivos() > 0) {
+        <label class="flex cursor-pointer items-center gap-2 border-b border-line px-4 py-2.5 text-sm text-muted">
+          <input type="checkbox" [checked]="verInactivos()" (change)="verInactivos.set(!verInactivos())" />
+          Mostrar {{ inactivos() }} {{ inactivos() === 1 ? 'sector inactivo' : 'sectores inactivos' }} en el mapa
+        </label>
+      }
+      <ul class="m-0 flex list-none flex-col p-0">
+        @for (z of sectores(); track z.id) {
+          <li
+            class="flex items-center gap-2 border-b border-line px-4 py-3 last:border-b-0 hover:bg-surface-2"
+            [class.bg-surface-2]="z.id === seleccionadaId()"
+            [class.opacity-60]="!z.activo"
+          >
+            <button type="button" class="flex min-w-0 flex-1 cursor-pointer flex-col border-0 bg-transparent p-0 text-left" (click)="seleccionar(z.id)">
+              <b class="truncate text-sm font-semibold">{{ z.nombre }}@if (!z.activo) { <span class="font-normal text-subtle"> · inactivo</span> }</b>
+              <span class="text-xs text-subtle">{{ z.areaKm2 }} km² · {{ z.alertas }} alertas · {{ z.unidades }} unidades</span>
+            </button>
+            <button matIconButton type="button" matTooltip="Renombrar" aria-label="Renombrar sector" (click)="renombrar(z)"><mat-icon class="icono-sm">edit</mat-icon></button>
+            <button
+              matIconButton
+              type="button"
+              [matTooltip]="z.activo ? 'Desactivar' : 'Activar'"
+              [attr.aria-label]="z.activo ? 'Desactivar sector' : 'Activar sector'"
+              (click)="alternarActivo(z)"
+            >
+              <mat-icon class="icono-sm">{{ z.activo ? 'toggle_on' : 'toggle_off' }}</mat-icon>
+            </button>
+          </li>
+        } @empty {
+          <li class="flex flex-col items-center gap-2 px-6 py-14 text-center text-muted">
+            <mat-icon class="text-subtle">map</mat-icon>
+            <b class="text-ink">Aún no hay sectores</b>
+            <span class="text-sm">Toda la actividad se agrupa como «Sin sector asignado». Genera una cuadrícula o dibuja uno a mano.</span>
+          </li>
+        }
+      </ul>
+    </section>
+  </div>
+</div>

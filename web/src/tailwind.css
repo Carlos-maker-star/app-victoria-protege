@@ -1,0 +1,327 @@
+@import 'tailwindcss';
+
+/*
+ * Tokens del sistema visual. PALETA: Azul institucional (references/paletas.md del skill).
+ * Para cambiar de paleta, reemplaza solo el bloque "Primario" de :root y .dark.
+ * Los componentes NUNCA usan hex: solo estas utilidades (bg-surface, text-muted, border-line…).
+ */
+
+/* Modo oscuro por clase: TemaService pone/quita `dark` en <html> */
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme inline {
+  --font-sans: 'Geist', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'Geist Mono', ui-monospace, monospace;
+
+  --color-app: var(--app-bg);
+  --color-surface: var(--app-surface);
+  --color-surface-2: var(--app-surface-2);
+  --color-line: var(--app-border);
+  --color-ink: var(--app-text);
+  --color-muted: var(--app-muted);
+  --color-subtle: var(--app-subtle);
+  --color-track: var(--app-track);
+
+  --color-primary: var(--app-primary);
+  --color-primary-soft: var(--app-primary-soft);
+  --color-on-primary: var(--app-on-primary);
+  --color-nav-active: var(--app-nav-active);
+  --color-nav-active-ink: var(--app-nav-active-text);
+  --color-brand-panel: var(--app-brand-panel);
+
+  /* Estados de la alerta: cada uno apunta a un rol semántico (core/etiquetas.ts) */
+  --color-nuevo-bg: var(--app-nuevo-bg);
+  --color-nuevo-fg: var(--app-nuevo-fg);
+  --color-curso-bg: var(--app-curso-bg);
+  --color-curso-fg: var(--app-curso-fg);
+  --color-espera-bg: var(--app-espera-bg);
+  --color-espera-fg: var(--app-espera-fg);
+  --color-atencion-bg: var(--app-atencion-bg);
+  --color-atencion-fg: var(--app-atencion-fg);
+  --color-exito-bg: var(--app-exito-bg);
+  --color-exito-fg: var(--app-exito-fg);
+  --color-neutro-bg: var(--app-neutro-bg);
+  --color-neutro-fg: var(--app-neutro-fg);
+  --color-peligro-bg: var(--app-peligro-bg);
+  --color-peligro-fg: var(--app-peligro-fg);
+
+  /* Prioridad de la alerta: punto de color */
+  --color-bajo: var(--app-bajo);
+  --color-medio: var(--app-medio);
+  --color-alto: var(--app-alto);
+  --color-critico: var(--app-critico);
+
+  /* Estados de la unidad (los mismos colores que la app del sereno) */
+  --color-u-disp: var(--app-u-disp);
+  --color-u-ruta: var(--app-u-ruta);
+  --color-u-aten: var(--app-u-aten);
+  --color-u-fuera: var(--app-u-fuera);
+}
+
+:root {
+  /* Neutros fríos */
+  --app-bg: #f5f6f8;
+  --app-surface: #ffffff;
+  --app-surface-2: #f9fafb;
+  --app-border: #e4e7ec;
+  --app-text: #101828;
+  --app-muted: #475467;
+  --app-subtle: #667085;
+  --app-track: #f2f4f7;
+
+  /* Primario (Azul institucional) */
+  --app-primary: #1d4ed8;
+  --app-primary-soft: #eff6ff;
+  --app-on-primary: #ffffff;
+  --app-nav-active: #eff6ff;
+  --app-nav-active-text: #1e40af;
+  --app-brand-panel: #1e3a8a;
+
+  --app-nuevo-bg: #e0f2fe;
+  --app-nuevo-fg: #075985;
+  --app-curso-bg: #fef3c7;
+  --app-curso-fg: #92400e;
+  --app-espera-bg: #ede9fe;
+  --app-espera-fg: #5b21b6;
+  --app-atencion-bg: #dbeafe;
+  --app-atencion-fg: #1e40af;
+  --app-exito-bg: #dcfce7;
+  --app-exito-fg: #166534;
+  --app-neutro-bg: #eaecf0;
+  --app-neutro-fg: #344054;
+  --app-peligro-bg: #fee2e2;
+  --app-peligro-fg: #991b1b;
+
+  --app-bajo: #98a2b3;
+  --app-medio: #3b82f6;
+  --app-alto: #ea580c;
+  --app-critico: #dc2626;
+
+  --app-u-disp: #16a34a;
+  --app-u-ruta: #ea580c;
+  --app-u-aten: #dc2626;
+  --app-u-fuera: #475467;
+}
+
+.dark {
+  --app-bg: #0b0f17;
+  --app-surface: #121926;
+  --app-surface-2: #0e1420;
+  --app-border: #223044;
+  --app-text: #e6eaf2;
+  --app-muted: #a3aec2;
+  --app-subtle: #8592a8;
+  --app-track: #1b2433;
+
+  --app-primary: #60a5fa;
+  --app-primary-soft: rgb(96 165 250 / 0.14);
+  --app-on-primary: #0b0f17;
+  --app-nav-active: rgb(96 165 250 / 0.14);
+  --app-nav-active-text: #bfdbfe;
+  --app-brand-panel: #0f1d45;
+
+  --app-nuevo-bg: rgb(14 165 233 / 0.18);
+  --app-nuevo-fg: #7dd3fc;
+  --app-curso-bg: rgb(245 158 11 / 0.18);
+  --app-curso-fg: #fcd34d;
+  --app-espera-bg: rgb(139 92 246 / 0.22);
+  --app-espera-fg: #c4b5fd;
+  --app-atencion-bg: rgb(96 165 250 / 0.18);
+  --app-atencion-fg: #bfdbfe;
+  --app-exito-bg: rgb(34 197 94 / 0.18);
+  --app-exito-fg: #86efac;
+  --app-neutro-bg: rgb(152 162 179 / 0.16);
+  --app-neutro-fg: #d0d5dd;
+  --app-peligro-bg: rgb(239 68 68 / 0.18);
+  --app-peligro-fg: #fca5a5;
+
+  --app-bajo: #667085;
+  --app-medio: #60a5fa;
+  --app-alto: #fb923c;
+  --app-critico: #f87171;
+
+  --app-u-disp: #4ade80;
+  --app-u-ruta: #fb923c;
+  --app-u-aten: #f87171;
+  --app-u-fuera: #8592a8;
+}
+
+@layer base {
+  body {
+    @apply bg-app font-sans text-ink antialiased;
+    margin: 0;
+  }
+}
+
+/* ---------- Mapa (Leaflet) ---------- */
+.leaflet-container {
+  font-family: var(--font-sans);
+  background: var(--app-track);
+}
+
+/* Mapa base en modo oscuro: se invierten los tiles de OpenStreetMap */
+.dark .leaflet-tile-pane {
+  filter: invert(1) hue-rotate(180deg) brightness(0.92) contrast(0.88) saturate(0.6);
+}
+
+.marcador-alerta,
+.marcador-unidad {
+  background: none;
+  border: 0;
+}
+
+.marcador-alerta .punto {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 999px;
+  border: 3px solid var(--app-surface);
+  color: var(--app-surface);
+  background: var(--c);
+  box-shadow: 0 2px 6px rgb(0 0 0 / 0.3);
+  position: relative;
+}
+
+.marcador-alerta.seleccionada .punto {
+  outline: 3px solid var(--app-primary);
+  outline-offset: 2px;
+}
+
+.marcador-alerta.pulso .punto::before {
+  content: '';
+  position: absolute;
+  inset: -10px;
+  border-radius: 999px;
+  background: var(--c);
+  opacity: 0.25;
+  animation: pulso-mapa 2s ease-in-out infinite;
+}
+
+@keyframes pulso-mapa {
+  0%,
+  100% {
+    transform: scale(0.6);
+    opacity: 0.35;
+  }
+  50% {
+    transform: scale(1.2);
+    opacity: 0;
+  }
+}
+
+.marcador-unidad .cuadro {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 7px;
+  border: 3px solid var(--app-surface);
+  color: var(--app-surface);
+  background: var(--c);
+  box-shadow: 0 2px 6px rgb(0 0 0 / 0.3);
+}
+
+.marcador-unidad .etiqueta {
+  position: absolute;
+  top: 28px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 1px 7px;
+  border-radius: 999px;
+  border: 1px solid var(--app-border);
+  background: var(--app-surface);
+  color: var(--app-text);
+  font: 600 10.5px 'Geist Mono', monospace;
+  white-space: nowrap;
+}
+
+.marcador-alerta .material-symbols-rounded,
+.marcador-unidad .material-symbols-rounded {
+  font-size: 16px;
+  line-height: 1;
+}
+
+@keyframes pulso-vivo {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+
+@layer base {
+  .leaflet-control-zoom a {
+    color: var(--app-text);
+    background: var(--app-surface);
+    border-color: var(--app-border);
+  }
+}
+
+/* Límite del distrito y sectores en el mapa (el color sigue el tema) */
+.leaflet-container path.zona-distrito {
+  stroke: var(--app-primary);
+  fill: var(--app-primary);
+  fill-opacity: 0.04;
+  stroke-dasharray: 8 6;
+}
+
+.leaflet-container path.zona-sector {
+  stroke: var(--app-subtle);
+  fill: none;
+  stroke-width: 1.5;
+  stroke-dasharray: 5 5;
+}
+
+/* Nombre del sector en el centro de su polígono */
+.leaflet-tooltip.etiqueta-sector {
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  color: var(--app-subtle);
+  font-size: 12px;
+  font-weight: 600;
+  text-shadow: 0 0 3px var(--app-surface), 0 0 3px var(--app-surface);
+  pointer-events: none;
+}
+
+.leaflet-tooltip.etiqueta-sector::before {
+  display: none;
+}
+
+/* Edición de sectores (Administración → Zonas y sectores) */
+.leaflet-container path.sector-activo {
+  stroke: var(--app-primary);
+  fill: var(--app-primary);
+  fill-opacity: 0.1;
+  cursor: pointer;
+}
+
+.leaflet-container path.sector-activo.seleccionado {
+  fill-opacity: 0.3;
+  stroke-width: 3;
+}
+
+.leaflet-container path.sector-inactivo {
+  stroke: var(--app-subtle);
+  fill: var(--app-subtle);
+  fill-opacity: 0.08;
+  stroke-dasharray: 4 4;
+  cursor: pointer;
+}
+
+.leaflet-container path.sector-borrador {
+  stroke: var(--app-primary);
+  fill: var(--app-primary);
+  fill-opacity: 0.2;
+  stroke-width: 2;
+}
+
+.leaflet-container path.vertice-borrador {
+  stroke: var(--app-surface);
+  fill: var(--app-primary);
+  fill-opacity: 1;
+  stroke-width: 2;
+}

@@ -1,0 +1,87 @@
+<div class="flex flex-col gap-6">
+  <div class="flex flex-col gap-1.5">
+    <h1 class="m-0 text-[28px] font-semibold tracking-tight">Configuración</h1>
+    <p class="m-0 text-sm text-muted">Cómo asigna y reasigna el motor. Los cambios se aplican en el acto y quedan en la auditoría.</p>
+  </div>
+
+  @if (cargando()) { <mat-progress-bar mode="indeterminate" /> }
+
+  <!-- Modo de asignación -->
+  <section class="flex flex-wrap items-start justify-between gap-6 rounded-xl border border-line bg-surface px-6 py-5" aria-label="Modo de asignación">
+    <div class="flex max-w-3xl flex-col gap-2">
+      <h2 class="m-0 flex items-center gap-2 text-base font-semibold">
+        Asignación automática
+        <span class="rounded-full px-2.5 py-0.5 text-xs font-semibold" [class]="automatico() ? 'bg-exito-bg text-exito-fg' : 'bg-curso-bg text-curso-fg'">
+          {{ automatico() ? 'Motor activo' : 'Manual' }}
+        </span>
+      </h2>
+      <p class="m-0 text-sm leading-relaxed text-muted">
+        <b class="text-ink">Activada:</b> el motor elige solo la unidad disponible más cercana y reasigna si no responde.
+        <b class="text-ink">Desactivada:</b> el motor no asigna; la central lo hace a mano desde «Asignar manualmente».
+        Sirve como método base para comparar la asignación manual por radio con la automática.
+      </p>
+      @if (!automatico()) {
+        <p class="m-0 flex items-start gap-2 rounded-lg bg-curso-bg px-3.5 py-2.5 text-[13px] text-curso-fg" role="status">
+          <mat-icon class="icono-sm mt-0.5">warning</mat-icon>
+          Mientras esté desactivada, las alertas nuevas esperan a que la central les asigne una unidad.
+        </p>
+      }
+    </div>
+    <mat-slide-toggle [checked]="automatico()" [disabled]="guardando() === 'asignacion_automatica'" (change)="cambiarModo($event.checked)" aria-label="Asignación automática">
+      {{ automatico() ? 'Activada' : 'Desactivada' }}
+    </mat-slide-toggle>
+  </section>
+
+  <!-- Parámetros numéricos -->
+  <section class="overflow-hidden rounded-xl border border-line bg-surface" aria-label="Parámetros del motor">
+    <header class="border-b border-line px-6 py-4"><h2 class="m-0 text-base font-semibold">Parámetros del motor</h2></header>
+    <div class="overflow-x-auto">
+      <table class="w-full min-w-[760px] border-collapse text-left">
+        <thead>
+          <tr class="border-b border-line bg-surface-2 text-xs font-semibold uppercase tracking-wide text-subtle">
+            <th class="h-11 px-6 font-semibold">Parámetro</th>
+            <th class="w-56 px-4 font-semibold">Valor</th>
+            <th class="w-32 px-4 font-semibold">Rango</th>
+            <th class="w-32 px-6 text-right font-semibold"><span class="sr-only">Guardar</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (f of filas(); track f.clave) {
+            <tr class="h-[68px] border-b border-line last:border-b-0">
+              <td class="px-6">
+                <label class="flex flex-col" [for]="'p-' + f.clave">
+                  <b class="text-sm font-semibold">{{ f.etiqueta }}</b>
+                  <span class="text-xs text-subtle">{{ f.descripcion }}</span>
+                </label>
+              </td>
+              <td class="px-4">
+                <span class="flex items-center gap-2">
+                  <input
+                    [id]="'p-' + f.clave"
+                    type="number"
+                    inputmode="numeric"
+                    class="h-10 w-28 rounded-lg border bg-surface px-3 font-sans text-sm text-ink"
+                    [class]="valido(f) ? 'border-line' : 'border-critico'"
+                    [min]="f.min"
+                    [max]="f.max"
+                    [value]="valor(f)"
+                    [attr.aria-invalid]="!valido(f)"
+                    (input)="escribir(f, $any($event.target).value)"
+                    (keydown.enter)="guardar(f)"
+                  />
+                  <span class="text-sm text-muted">{{ f.unidad }}</span>
+                </span>
+              </td>
+              <td class="px-4 text-sm text-subtle">{{ f.min }} – {{ f.max }}</td>
+              <td class="px-6 text-right">
+                @if (cambio(f)) {
+                  <button matButton="filled" type="button" [disabled]="!valido(f) || guardando() === f.clave" (click)="guardar(f)">Guardar</button>
+                }
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </section>
+</div>

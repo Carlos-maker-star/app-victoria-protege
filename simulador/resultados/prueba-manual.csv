@@ -1,0 +1,3 @@
+﻿id;tipo;estado;truncada;t_asignacion_s;t_aceptacion_s;t_llegada_s;t_atencion_s;reasignaciones;escalada;manual
+176;ROBO;FINALIZADA;false;8,1;9,0;52,3;31,2;0;false;true
+177;SOSPECHOSA;FINALIZADA;false;5,1;50,3;96,6;44,3;1;false;true

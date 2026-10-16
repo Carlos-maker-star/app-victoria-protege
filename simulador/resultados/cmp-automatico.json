@@ -1,0 +1,95 @@
+{
+  "resumen": {
+    "experimento": "cmp-automatico",
+    "modo": "automatico",
+    "parametros": {
+      "api": "http://localhost:8080/api",
+      "modo": "automatico",
+      "unidades": 5,
+      "ciudadanos": 0,
+      "duracion": 45,
+      "drenaje": 240,
+      "alertas-por-minuto": 5,
+      "semilla": 11,
+      "velocidad-kmh": 40,
+      "factor-velocidad": 8,
+      "p-rechazo": 0.1,
+      "p-sin-respuesta": 0.05,
+      "reaccion-min": 1,
+      "reaccion-max": 8,
+      "atencion-min": 15,
+      "atencion-max": 45,
+      "operador-demora": 12,
+      "operador-desviacion": 10,
+      "operador-error": 0.2,
+      "nombre": "cmp-automatico",
+      "sin-aislar": false,
+      "silencioso": true,
+      "ayuda": false
+    },
+    "plan": {
+      "alertasPlanificadas": 1,
+      "huella": "bf18ce03"
+    },
+    "alertas": {
+      "creadas": 1,
+      "finalizadas": 1,
+      "canceladas": 0,
+      "descartadasPorFaltaDeCiudadanos": 0
+    },
+    "reasignadas": 0,
+    "escaladas": 0,
+    "tiempos": {
+      "asignacion": {
+        "n": 1,
+        "media": 2.3949999809265137,
+        "mediana": 2.3949999809265137,
+        "p90": 2.3949999809265137,
+        "max": 2.3949999809265137
+      },
+      "aceptacion": {
+        "n": 1,
+        "media": 3.638000011444092,
+        "mediana": 3.638000011444092,
+        "p90": 3.638000011444092,
+        "max": 3.638000011444092
+      },
+      "llegada": {
+        "n": 1,
+        "media": 35.23800015449524,
+        "mediana": 35.23800015449524,
+        "p90": 35.23800015449524,
+        "max": 35.23800015449524
+      },
+      "atencion": {
+        "n": 1,
+        "media": 44.24899983406067,
+        "mediana": 44.24899983406067,
+        "p90": 44.24899983406067,
+        "max": 44.24899983406067
+      }
+    },
+    "unidades": {
+      "aceptaciones": 1,
+      "rechazos": 0,
+      "sinRespuesta": 0
+    },
+    "errores": 0,
+    "duracionRealSegundos": 89
+  },
+  "alertas": [
+    {
+      "id": 178,
+      "tipo": "ROBO",
+      "estado": "FINALIZADA",
+      "truncada": false,
+      "tAsignacion": 2.3949999809265137,
+      "tAceptacion": 3.638000011444092,
+      "tLlegada": 35.23800015449524,
+      "tAtencion": 44.24899983406067,
+      "reasignaciones": 0,
+      "escalada": false,
+      "manual": false
+    }
+  ]
+}

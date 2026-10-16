@@ -1,0 +1,95 @@
+{
+  "resumen": {
+    "experimento": "cmp-manual",
+    "modo": "manual",
+    "parametros": {
+      "api": "http://localhost:8080/api",
+      "modo": "manual",
+      "unidades": 5,
+      "ciudadanos": 0,
+      "duracion": 45,
+      "drenaje": 240,
+      "alertas-por-minuto": 5,
+      "semilla": 11,
+      "velocidad-kmh": 40,
+      "factor-velocidad": 8,
+      "p-rechazo": 0.1,
+      "p-sin-respuesta": 0.05,
+      "reaccion-min": 1,
+      "reaccion-max": 8,
+      "atencion-min": 15,
+      "atencion-max": 45,
+      "operador-demora": 12,
+      "operador-desviacion": 10,
+      "operador-error": 0.2,
+      "nombre": "cmp-manual",
+      "sin-aislar": false,
+      "silencioso": true,
+      "ayuda": false
+    },
+    "plan": {
+      "alertasPlanificadas": 1,
+      "huella": "bf18ce03"
+    },
+    "alertas": {
+      "creadas": 1,
+      "finalizadas": 1,
+      "canceladas": 0,
+      "descartadasPorFaltaDeCiudadanos": 0
+    },
+    "reasignadas": 0,
+    "escaladas": 0,
+    "tiempos": {
+      "asignacion": {
+        "n": 1,
+        "media": 8.091000080108643,
+        "mediana": 8.091000080108643,
+        "p90": 8.091000080108643,
+        "max": 8.091000080108643
+      },
+      "aceptacion": {
+        "n": 1,
+        "media": 5.000999927520752,
+        "mediana": 5.000999927520752,
+        "p90": 5.000999927520752,
+        "max": 5.000999927520752
+      },
+      "llegada": {
+        "n": 1,
+        "media": 42.31399989128113,
+        "mediana": 42.31399989128113,
+        "p90": 42.31399989128113,
+        "max": 42.31399989128113
+      },
+      "atencion": {
+        "n": 1,
+        "media": 44.375,
+        "mediana": 44.375,
+        "p90": 44.375,
+        "max": 44.375
+      }
+    },
+    "unidades": {
+      "aceptaciones": 1,
+      "rechazos": 0,
+      "sinRespuesta": 0
+    },
+    "errores": 0,
+    "duracionRealSegundos": 98
+  },
+  "alertas": [
+    {
+      "id": 179,
+      "tipo": "ROBO",
+      "estado": "FINALIZADA",
+      "truncada": false,
+      "tAsignacion": 8.091000080108643,
+      "tAceptacion": 5.000999927520752,
+      "tLlegada": 42.31399989128113,
+      "tAtencion": 44.375,
+      "reasignaciones": 0,
+      "escalada": false,
+      "manual": true
+    }
+  ]
+}

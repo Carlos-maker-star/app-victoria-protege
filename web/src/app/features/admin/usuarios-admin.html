@@ -1,0 +1,95 @@
+<div class="flex flex-col gap-6">
+  <div class="flex flex-wrap items-end justify-between gap-4">
+    <div class="flex flex-col gap-1.5">
+      <h1 class="m-0 text-[28px] font-semibold tracking-tight">Usuarios</h1>
+      <p class="m-0 text-sm text-muted">{{ usuarios().length }} usuarios · personal de la central, serenos y ciudadanos</p>
+    </div>
+    <button matButton="filled" type="button" (click)="nuevo()"><mat-icon>person_add</mat-icon>Nuevo usuario</button>
+  </div>
+
+  <div class="campo-denso flex flex-wrap items-center gap-3 rounded-xl border border-line bg-surface p-3">
+    <mat-form-field class="min-w-[260px] flex-1">
+      <mat-icon matPrefix class="icono-sm ml-3 text-subtle">search</mat-icon>
+      <input matInput [formControl]="busqueda" type="search" aria-label="Buscar" placeholder="Buscar por nombre, DNI o correo" />
+    </mat-form-field>
+    <mat-form-field class="w-56">
+      <mat-label>Rol</mat-label>
+      <mat-select [value]="rol()" (valueChange)="rol.set($event)">
+        <mat-option [value]="null">Todos</mat-option>
+        @for (r of roles; track r.codigo) { <mat-option [value]="r.codigo">{{ r.etiqueta }}</mat-option> }
+      </mat-select>
+    </mat-form-field>
+    @if (hayFiltros()) {
+      <button matButton type="button" (click)="limpiar()"><mat-icon>filter_alt_off</mat-icon>Limpiar</button>
+    }
+  </div>
+
+  <section class="overflow-hidden rounded-xl border border-line bg-surface">
+    <div class="h-1">@if (cargando()) { <mat-progress-bar mode="indeterminate" /> }</div>
+    <div class="overflow-x-auto">
+      <table class="w-full min-w-[900px] border-collapse text-left">
+        <thead>
+          <tr class="border-b border-line bg-surface-2 text-xs font-semibold uppercase tracking-wide text-subtle">
+            <th class="h-11 px-6 font-semibold">Usuario</th>
+            <th class="w-48 px-4 font-semibold">Rol</th>
+            <th class="px-4 font-semibold">Contacto</th>
+            <th class="w-32 px-4 font-semibold">Unidad</th>
+            <th class="w-28 px-4 font-semibold">Estado</th>
+            <th class="w-40 px-4 font-semibold">Creado</th>
+            <th class="w-36 px-6 text-right font-semibold"><span class="sr-only">Acciones</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (u of usuarios(); track u.id) {
+            <tr class="h-[60px] border-b border-line last:border-b-0 hover:bg-surface-2" [class.opacity-60]="!u.activo">
+              <td class="px-6">
+                <span class="flex items-center gap-3">
+                  <app-avatar [nombre]="u.nombres + ' ' + u.apellidos" />
+                  <span class="flex min-w-0 flex-col">
+                    <b class="truncate text-sm font-semibold">{{ u.nombres }} {{ u.apellidos }}</b>
+                    <span class="font-mono text-xs text-subtle">DNI {{ u.dni }}</span>
+                  </span>
+                </span>
+              </td>
+              <td class="px-4"><span class="inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold" [class]="clasesRol[u.rol]">{{ etiquetaRol[u.rol] }}</span></td>
+              <td class="px-4 text-sm">
+                <span class="block truncate">{{ u.email ?? '—' }}</span>
+                <span class="text-xs text-subtle">{{ u.telefono ?? 'Sin teléfono' }}</span>
+              </td>
+              <td class="px-4 text-sm">{{ u.unidadCodigo ?? '—' }}</td>
+              <td class="px-4">
+                <span class="inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold" [class]="u.activo ? 'bg-exito-bg text-exito-fg' : 'bg-neutro-bg text-neutro-fg'">{{ u.activo ? 'Activo' : 'Inactivo' }}</span>
+              </td>
+              <td class="px-4 text-sm text-muted">{{ u.creadoEn | date: 'd MMM y' }}</td>
+              <td class="px-6 text-right">
+                <button matIconButton type="button" matTooltip="Editar" aria-label="Editar usuario" (click)="editar(u)"><mat-icon class="icono-sm">edit</mat-icon></button>
+                <button matIconButton type="button" matTooltip="Reiniciar contraseña" aria-label="Reiniciar contraseña" (click)="clave(u)"><mat-icon class="icono-sm">key</mat-icon></button>
+                @if (u.id !== yo()?.id) {
+                  <button
+                    matIconButton
+                    type="button"
+                    [matTooltip]="u.activo ? 'Desactivar' : 'Activar'"
+                    [attr.aria-label]="u.activo ? 'Desactivar usuario' : 'Activar usuario'"
+                    (click)="alternarActivo(u)"
+                  >
+                    <mat-icon class="icono-sm">{{ u.activo ? 'person_off' : 'person_check' }}</mat-icon>
+                  </button>
+                }
+              </td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="7" class="px-6 py-14 text-center text-muted">
+                <div class="flex flex-col items-center gap-2">
+                  <mat-icon class="text-subtle">group_off</mat-icon>
+                  <b class="text-ink">{{ hayFiltros() ? 'Ningún usuario coincide' : 'No hay usuarios' }}</b>
+                  <span class="text-sm">{{ hayFiltros() ? 'Prueba con otros filtros.' : 'Crea el primero con «Nuevo usuario».' }}</span>
+                </div>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </section>
+</div>

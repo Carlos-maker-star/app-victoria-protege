@@ -1,0 +1,104 @@
+{
+  "resumen": {
+    "experimento": "prueba-manual",
+    "modo": "manual",
+    "parametros": {
+      "api": "http://localhost:8080/api",
+      "modo": "manual",
+      "unidades": 4,
+      "ciudadanos": 0,
+      "duracion": 40,
+      "drenaje": 240,
+      "alertas-por-minuto": 4,
+      "semilla": 7,
+      "velocidad-kmh": 40,
+      "factor-velocidad": 6,
+      "p-rechazo": 0.1,
+      "p-sin-respuesta": 0.05,
+      "reaccion-min": 1,
+      "reaccion-max": 8,
+      "atencion-min": 15,
+      "atencion-max": 45,
+      "operador-demora": 15,
+      "operador-desviacion": 10,
+      "operador-error": 0.2,
+      "nombre": "prueba-manual",
+      "sin-aislar": false,
+      "silencioso": true,
+      "ayuda": false
+    },
+    "alertas": {
+      "creadas": 2,
+      "finalizadas": 2,
+      "canceladas": 0,
+      "descartadasPorFaltaDeCiudadanos": 0
+    },
+    "reasignadas": 1,
+    "escaladas": 0,
+    "tiempos": {
+      "asignacion": {
+        "n": 2,
+        "media": 6.5605000257492065,
+        "mediana": 8.065000057220459,
+        "p90": 8.065000057220459,
+        "max": 8.065000057220459
+      },
+      "aceptacion": {
+        "n": 2,
+        "media": 29.66449999809265,
+        "mediana": 50.29299998283386,
+        "p90": 50.29299998283386,
+        "max": 50.29299998283386
+      },
+      "llegada": {
+        "n": 2,
+        "media": 74.48250007629395,
+        "mediana": 96.62700009346008,
+        "p90": 96.62700009346008,
+        "max": 96.62700009346008
+      },
+      "atencion": {
+        "n": 2,
+        "media": 37.75349998474121,
+        "mediana": 44.27199983596802,
+        "p90": 44.27199983596802,
+        "max": 44.27199983596802
+      }
+    },
+    "unidades": {
+      "aceptaciones": 2,
+      "rechazos": 1,
+      "sinRespuesta": 0
+    },
+    "errores": 0,
+    "duracionRealSegundos": 167
+  },
+  "alertas": [
+    {
+      "id": 176,
+      "tipo": "ROBO",
+      "estado": "FINALIZADA",
+      "truncada": false,
+      "tAsignacion": 8.065000057220459,
+      "tAceptacion": 9.03600001335144,
+      "tLlegada": 52.33800005912781,
+      "tAtencion": 31.235000133514404,
+      "reasignaciones": 0,
+      "escalada": false,
+      "manual": true
+    },
+    {
+      "id": 177,
+      "tipo": "SOSPECHOSA",
+      "estado": "FINALIZADA",
+      "truncada": false,
+      "tAsignacion": 5.055999994277954,
+      "tAceptacion": 50.29299998283386,
+      "tLlegada": 96.62700009346008,
+      "tAtencion": 44.27199983596802,
+      "reasignaciones": 1,
+      "escalada": false,
+      "manual": true
+    }
+  ]
+}

@@ -1,0 +1,10 @@
+# Copia este archivo como application-local.properties (no se sube a git)
+spring.datasource.username=postgres
+spring.datasource.password=CAMBIAR_POR_TU_CLAVE
+
+# Secreto para firmar los tokens JWT (minimo 32 caracteres, aleatorio y propio de cada maquina).
+# Generar uno:  node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"
+app.jwt.secret=CAMBIAR_POR_UN_SECRETO_LARGO_Y_ALEATORIO
+
+# Clave comun de los usuarios de prueba que crea el perfil local (admin, operador, serenos...).
+app.seed.password=CAMBIAR_POR_UNA_CLAVE_DE_PRUEBA

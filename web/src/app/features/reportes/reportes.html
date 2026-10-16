@@ -1,0 +1,184 @@
+<div class="flex flex-col gap-6">
+  <div class="flex flex-wrap items-end justify-between gap-4">
+    <div class="flex flex-col gap-1.5">
+      <h1 class="m-0 text-[28px] font-semibold tracking-tight">Reportes y estadísticas</h1>
+      <p class="m-0 text-sm text-muted">{{ titulo() }} · todo el distrito</p>
+    </div>
+    <button matButton="outlined" type="button" [disabled]="!reporte()" (click)="exportar()">
+      <mat-icon>download</mat-icon>Exportar CSV
+    </button>
+  </div>
+
+  <!-- Rango de fechas -->
+  <div class="flex flex-wrap items-center gap-3 rounded-xl border border-line bg-surface p-3">
+    <div class="flex flex-wrap items-center gap-2" role="group" aria-label="Rango de fechas">
+      @for (p of presets; track p.clave) {
+        <button
+          type="button"
+          class="h-8 cursor-pointer rounded-full border px-3.5 font-sans text-[13px] font-medium"
+          [class]="presetActivo() === p.clave ? 'border-primary bg-primary text-on-primary' : 'border-line bg-surface text-muted hover:bg-surface-2'"
+          [attr.aria-pressed]="presetActivo() === p.clave"
+          (click)="elegir(p.clave)"
+        >
+          {{ p.etiqueta }}
+        </button>
+      }
+    </div>
+    <span class="hidden h-6 w-px bg-line sm:block"></span>
+    <div class="flex flex-wrap items-center gap-2 text-sm text-muted">
+      <label class="flex items-center gap-2">
+        Desde
+        <input
+          type="date"
+          class="h-10 rounded-lg border border-line bg-surface px-3 font-sans text-sm text-ink"
+          [value]="rango().desde"
+          [max]="maxFecha"
+          (change)="cambiarFecha('desde', $any($event.target).value)"
+        />
+      </label>
+      <label class="flex items-center gap-2">
+        Hasta
+        <input
+          type="date"
+          class="h-10 rounded-lg border border-line bg-surface px-3 font-sans text-sm text-ink"
+          [value]="rango().hasta"
+          [max]="maxFecha"
+          (change)="cambiarFecha('hasta', $any($event.target).value)"
+        />
+      </label>
+    </div>
+  </div>
+
+  <div class="h-1">@if (cargando()) { <mat-progress-bar mode="indeterminate" /> }</div>
+
+  @if (error()) {
+    <div class="flex items-center justify-between gap-4 rounded-xl bg-peligro-bg px-4 py-3 text-sm text-peligro-fg" role="alert">
+      <span class="flex items-center gap-2"><mat-icon class="icono-sm">cloud_off</mat-icon>No se pudo cargar el reporte. ¿Está el backend en ejecución?</span>
+      <button matButton type="button" (click)="elegir(presetActivo() ?? '7')">Reintentar</button>
+    </div>
+  }
+
+  @if (vacio()) {
+    <div class="flex items-center gap-3 rounded-xl border border-line bg-surface px-4 py-3 text-sm text-muted" role="status">
+      <mat-icon class="icono-sm text-subtle">info</mat-icon>
+      No hubo alertas en este rango. Prueba con un periodo más amplio.
+    </div>
+  }
+
+  <!-- Indicadores -->
+  <div class="grid grid-cols-2 gap-3 md:grid-cols-4">
+    @for (k of indicadores(); track k.titulo) {
+      <div class="flex min-w-0 flex-col gap-1.5 rounded-xl border border-line bg-surface px-4 py-3.5">
+        <div class="flex items-center justify-between gap-1.5 text-xs font-medium text-muted">
+          <span class="truncate">{{ k.titulo }}</span>
+          <span class="flex size-7 shrink-0 items-center justify-center rounded-lg" [class]="k.tono">
+            <mat-icon class="icono-xs" aria-hidden="true">{{ k.icono }}</mat-icon>
+          </span>
+        </div>
+        <span class="text-[28px] leading-none font-semibold tracking-tight">
+          {{ k.valor }}@if (k.unidad) {<small class="ml-1 text-sm font-medium text-subtle">{{ k.unidad }}</small>}
+        </span>
+        <span class="truncate text-xs text-subtle">{{ k.detalle }}</span>
+      </div>
+    }
+  </div>
+
+  <!-- Gráficos -->
+  <div class="grid gap-4 lg:grid-cols-2">
+    <section class="rounded-xl border border-line bg-surface" aria-label="Alertas por día">
+      <header class="border-b border-line px-5 py-3.5"><h2 class="m-0 text-base font-semibold">Alertas por día</h2></header>
+      <div class="px-5 pt-5 pb-4">
+        <app-barras-verticales [puntos]="porDia()" [alto]="170" [cadaEtiqueta]="porDia().length > 16 ? 3 : 1" descripcion="Alertas por día" />
+      </div>
+    </section>
+
+    <section class="rounded-xl border border-line bg-surface" aria-label="Alertas por hora">
+      <header class="flex items-center justify-between border-b border-line px-5 py-3.5">
+        <h2 class="m-0 text-base font-semibold">Alertas por hora del día</h2>
+        <span class="text-xs text-subtle">Hora de Lima</span>
+      </header>
+      <div class="px-5 pt-5 pb-4">
+        <app-barras-verticales [puntos]="porHora()" [alto]="170" [mostrarValores]="false" [cadaEtiqueta]="etiquetaCada" descripcion="Alertas por hora del día" />
+      </div>
+    </section>
+
+    <section class="rounded-xl border border-line bg-surface lg:col-span-2" aria-label="Tiempo de llegada por día">
+      <header class="flex items-center justify-between border-b border-line px-5 py-3.5">
+        <h2 class="m-0 text-base font-semibold">Tiempo promedio de llegada por día</h2>
+        <span class="text-xs text-subtle">minutos:segundos</span>
+      </header>
+      <div class="px-5 py-4">
+        @if (hayLlegadas()) {
+          <app-linea [puntos]="llegadaPorDia()" [formato]="formatoTiempo" descripcion="Tiempo promedio de llegada por día" />
+        } @else {
+          <p class="m-0 py-8 text-center text-sm text-muted">Todavía no hay llegadas registradas en este rango.</p>
+        }
+      </div>
+    </section>
+
+    <section class="rounded-xl border border-line bg-surface" aria-label="Alertas por tipo">
+      <header class="border-b border-line px-5 py-3.5"><h2 class="m-0 text-base font-semibold">Alertas por tipo</h2></header>
+      <div class="px-5 py-4"><app-barras-horizontales [filas]="filasTipo()" color="bg-critico" /></div>
+    </section>
+
+    <section class="rounded-xl border border-line bg-surface" aria-label="Alertas por sector">
+      <header class="flex items-center justify-between border-b border-line px-5 py-3.5">
+        <h2 class="m-0 text-base font-semibold">Alertas por sector</h2>
+      </header>
+      <div class="px-5 py-4">
+        <app-barras-horizontales [filas]="reporte()?.porZona ?? []" color="bg-medio" />
+        @if (reporte()?.porZona?.length === 1 && reporte()?.porZona?.[0]?.codigo === 'SIN_SECTOR') {
+          <p class="m-0 mt-3 text-xs text-subtle">Todavía no se definieron sectores en el mapa; por eso todas las alertas figuran juntas.</p>
+        }
+      </div>
+    </section>
+
+    <section class="rounded-xl border border-line bg-surface lg:col-span-2" aria-label="Motivos de reasignación">
+      <header class="flex items-center justify-between border-b border-line px-5 py-3.5">
+        <h2 class="m-0 text-base font-semibold">Motivos de reasignación</h2>
+        <span class="text-xs text-subtle">Por qué una alerta cambió de unidad</span>
+      </header>
+      <div class="px-5 py-4">
+        <app-barras-horizontales [filas]="reporte()?.motivosReasignacion ?? []" color="bg-espera-fg" [anchoEtiqueta]="260" vacio="Ninguna alerta tuvo que reasignarse en este rango." />
+      </div>
+    </section>
+  </div>
+
+  <!-- Actividad de unidades -->
+  <section class="overflow-hidden rounded-xl border border-line bg-surface" aria-label="Actividad de unidades">
+    <header class="flex items-center justify-between border-b border-line px-5 py-3.5">
+      <h2 class="m-0 text-base font-semibold">Actividad de unidades</h2>
+      <span class="text-xs text-subtle">Traslado = desde que acepta hasta que llega</span>
+    </header>
+    <div class="overflow-x-auto">
+      <table class="w-full min-w-[760px] border-collapse text-left">
+        <thead>
+          <tr class="border-b border-line bg-surface-2 text-xs font-semibold uppercase tracking-wide text-subtle">
+            <th class="h-11 px-6 font-semibold">Unidad</th>
+            <th class="px-4 font-semibold">Sereno</th>
+            <th class="w-28 px-4 text-right font-semibold">Asignaciones</th>
+            <th class="w-28 px-4 text-right font-semibold">Atendidas</th>
+            <th class="w-28 px-4 text-right font-semibold">Rechazadas</th>
+            <th class="w-32 px-4 text-right font-semibold">Sin respuesta</th>
+            <th class="w-36 px-6 text-right font-semibold">Traslado prom.</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (u of reporte()?.unidades; track u.codigo) {
+            <tr class="h-14 border-b border-line last:border-b-0 hover:bg-surface-2">
+              <td class="px-6 text-sm font-semibold">{{ u.codigo }}</td>
+              <td class="px-4 text-sm">{{ u.sereno ?? '—' }}</td>
+              <td class="px-4 text-right text-sm">{{ u.asignaciones }}</td>
+              <td class="px-4 text-right text-sm font-medium">{{ u.atendidas }}</td>
+              <td class="px-4 text-right text-sm" [class.text-peligro-fg]="u.rechazadas > 0">{{ u.rechazadas }}</td>
+              <td class="px-4 text-right text-sm" [class.text-peligro-fg]="u.sinRespuesta > 0">{{ u.sinRespuesta }}</td>
+              <td class="px-6 text-right font-mono text-sm">{{ tiempo(u.tiempoTrasladoSeg) }}</td>
+            </tr>
+          } @empty {
+            <tr><td colspan="7" class="px-6 py-10 text-center text-sm text-muted">No hay unidades registradas.</td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </section>
+</div>

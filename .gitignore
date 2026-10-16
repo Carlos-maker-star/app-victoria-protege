@@ -1,0 +1,15 @@
+# Dependencias y compilados
+node_modules/
+docs/api/node_modules/
+dist/
+target/
+
+# Datos locales (no se suben)
+backend/evidencias-data/
+backend/src/main/resources/application-local.properties
+*.log
+.claude/
+
+# Sistema
+.DS_Store
+Thumbs.db
